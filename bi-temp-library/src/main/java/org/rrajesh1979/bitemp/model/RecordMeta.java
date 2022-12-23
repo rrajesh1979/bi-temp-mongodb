@@ -1,9 +1,11 @@
 package org.rrajesh1979.bitemp.model;
 
+import java.time.OffsetDateTime;
+
 public record RecordMeta(
         String createdBy,
-        long createdAt,
+        OffsetDateTime createdAt,
         String updatedBy,
-        long updatedAt) {
+        OffsetDateTime updatedAt) {
 }
 
