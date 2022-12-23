@@ -1,17 +1,19 @@
 package org.rrajesh1979.bitemp.resource;
 
 import lombok.extern.log4j.Log4j2;
-import org.rrajesh1979.bitemp.model.BiTempObject;
-import org.rrajesh1979.bitemp.model.CreateRequest;
-import org.rrajesh1979.bitemp.model.EffectiveMeta;
-import org.rrajesh1979.bitemp.model.RecordMeta;
+import org.bson.Document;
+import org.rrajesh1979.bitemp.model.*;
 import org.rrajesh1979.bitemp.service.BiTempService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping( "${api.default.path}" )
@@ -50,7 +52,22 @@ public class BiTempResource {
     }
 
     @GetMapping( value = "/get", headers = ACCEPT_APPLICATION_JSON )
-    public ResponseEntity<String> getBiTempData() {
-        return ResponseEntity.ok( "Hello World" );
+    public ResponseEntity<Map<String, Object>> getBiTempData(@RequestBody GetRequest getRequest) {
+        log.info("Get BiTemp Data for key: {}", getRequest.id());
+        log.info("Get BiTemp Data for effectiveFrom: {}", getRequest.effectiveFrom().atOffset(ZoneOffset.UTC));
+        log.info("Get BiTemp Data for effectiveTo: {}", getRequest.effectiveTo().atOffset(ZoneOffset.UTC));
+
+        List<Document> result = biTempService.getBiTempData(
+                getRequest.id(),
+                getRequest.effectiveFrom(),
+                getRequest.effectiveTo()
+        );
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("result", result);
+        response.put("count", result.size());
+        response.put("status", "success");
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

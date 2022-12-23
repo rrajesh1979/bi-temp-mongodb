@@ -15,7 +15,11 @@ public class OffsetDateTimeCodec implements Codec<OffsetDateTime> {
     public static final String OFFSET_FIELD = "offset";
     @Override
     public OffsetDateTime decode(BsonReader bsonReader, DecoderContext decoderContext) {
-        return null;
+        bsonReader.readStartDocument();
+        Date date = new Date(bsonReader.readDateTime());
+        String offset = bsonReader.readString();
+        bsonReader.readEndDocument();
+        return OffsetDateTime.ofInstant(date.toInstant(), OffsetDateTime.parse(offset).getOffset());
     }
 
     @Override
