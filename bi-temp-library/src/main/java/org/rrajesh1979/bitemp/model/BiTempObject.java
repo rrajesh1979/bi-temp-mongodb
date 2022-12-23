@@ -7,6 +7,7 @@ import org.rrajesh1979.bitemp.utils.DateTimeSerializer;
 import java.time.OffsetDateTime;
 
 public record BiTempObject(
+        Object id,
         Object data,
         RecordMeta recordMeta,
         EffectiveMeta effectiveMeta) {
