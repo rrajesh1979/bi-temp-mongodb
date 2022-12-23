@@ -1,0 +1,10 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/?readPreference=primary&directConnection=true&ssl=false
+      database: bitemp
+      collection: forex
+
+api:
+  default:
+    path: /api/v1

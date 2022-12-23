@@ -46,6 +46,7 @@ public class BiTempCoreTest {
 
         //Create BiTempObject
         BiTempObject biTempObject = new BiTempObject(
+                10,
                 testRecord,
                 recordMeta,
                 effectiveMeta);
