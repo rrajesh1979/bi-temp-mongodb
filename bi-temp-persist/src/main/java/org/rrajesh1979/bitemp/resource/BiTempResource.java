@@ -9,8 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,38 +28,18 @@ public class BiTempResource {
 
     @PostMapping( value = "/create", headers = ACCEPT_APPLICATION_JSON )
     public ResponseEntity<String> createBiTempData(@RequestBody CreateRequest createRequest) {
-        log.info("Create BiTemp Data: {}", createRequest);
-        EffectiveMeta effectiveMeta = new EffectiveMeta(
-                createRequest.effectiveFrom().atOffset(ZoneOffset.UTC),
-                createRequest.effectiveTo().atOffset(ZoneOffset.UTC));
-        RecordMeta recordMeta = new RecordMeta(
-                createRequest.createdBy(),
-                OffsetDateTime.now(),
-                createRequest.createdBy(),
-                OffsetDateTime.now());
-        BiTempObject biTempObject = new BiTempObject(
-                createRequest.id(),
-                createRequest.data(),
-                recordMeta,
-                effectiveMeta);
-        log.info("BiTemp Object: {}", biTempObject);
+        log.debug("Create BiTemp Data: {}", createRequest);
 
-        String id = biTempService.createBiTempData(biTempObject);
+        String id = biTempService.createBiTempData(createRequest);
         return ResponseEntity.ok(id);
 
     }
 
     @GetMapping( value = "/get", headers = ACCEPT_APPLICATION_JSON )
     public ResponseEntity<Map<String, Object>> getBiTempData(@RequestBody GetRequest getRequest) {
-        log.info("Get BiTemp Data for key: {}", getRequest.id());
-        log.info("Get BiTemp Data for effectiveFrom: {}", getRequest.effectiveFrom().atOffset(ZoneOffset.UTC));
-        log.info("Get BiTemp Data for effectiveTo: {}", getRequest.effectiveTo().atOffset(ZoneOffset.UTC));
+        log.debug("Get BiTemp Request: {}", getRequest);
 
-        List<Document> result = biTempService.getBiTempData(
-                getRequest.id(),
-                getRequest.effectiveFrom(),
-                getRequest.effectiveTo()
-        );
+        List<Document> result = biTempService.getBiTempData(getRequest);
 
         Map<String, Object> response = new HashMap<>();
         response.put("result", result);

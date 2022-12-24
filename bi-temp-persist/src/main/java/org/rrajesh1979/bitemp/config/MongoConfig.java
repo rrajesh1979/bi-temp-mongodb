@@ -7,11 +7,15 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.PojoCodecProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
+
+import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 
 @Configuration
 @EnableMongoRepositories
@@ -29,9 +33,19 @@ public class MongoConfig {
 
     @Bean
     public MongoClient mongoClient() {
+        CodecRegistry pojoCodecRegistry = fromProviders(PojoCodecProvider.builder().automatic(true).build());
+
+        var newCodecRegistry = CodecRegistries.fromRegistries(
+                MongoClientSettings.getDefaultCodecRegistry(),
+                CodecRegistries.fromCodecs(new OffsetDateTimeCodec()),
+                pojoCodecRegistry
+        );
+
         final ConnectionString connectionString = new ConnectionString(mongoUri);
-        final MongoClientSettings mongoClientSettings
-                = MongoClientSettings.builder().applyConnectionString(connectionString).build();
+        final MongoClientSettings mongoClientSettings =
+                MongoClientSettings.builder()
+                        .codecRegistry(newCodecRegistry)
+                        .applyConnectionString(connectionString).build();
         return MongoClients.create(mongoClientSettings);
     }
 
@@ -42,13 +56,9 @@ public class MongoConfig {
 
     @Bean
     public MongoCollection<Document> getCollection() {
-        var newCodecRegistry = CodecRegistries.fromRegistries(
-                MongoClientSettings.getDefaultCodecRegistry(),
-                CodecRegistries.fromCodecs(new OffsetDateTimeCodec())
-        );
+
         return mongoTemplate()
                 .getDb()
-                .withCodecRegistry(newCodecRegistry)
                 .getCollection(collectionName);
     }
 }
