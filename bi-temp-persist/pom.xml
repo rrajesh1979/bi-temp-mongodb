@@ -7,7 +7,6 @@
         <artifactId>bi-temp-mongodb</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
-    <groupId>org.rrajesh1979</groupId>
     <artifactId>bi-temp-persist</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>bi-temp-persist</name>

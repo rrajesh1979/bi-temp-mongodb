@@ -16,6 +16,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>bi-temp-library</module>
+        <module>bi-temp-persist</module>
     </modules>
     <repositories>
 
