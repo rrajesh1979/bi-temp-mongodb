@@ -13,6 +13,8 @@ import java.util.Date;
 public class OffsetDateTimeCodec implements Codec<OffsetDateTime> {
     public static final String DATE_FIELD = "dateTime";
     public static final String OFFSET_FIELD = "offset";
+    public static final String EPOCH_MILLI = "ephochMilli";
+
     @Override
     public OffsetDateTime decode(BsonReader bsonReader, DecoderContext decoderContext) {
         bsonReader.readStartDocument();
@@ -24,12 +26,10 @@ public class OffsetDateTimeCodec implements Codec<OffsetDateTime> {
 
     @Override
     public void encode(BsonWriter bsonWriter, OffsetDateTime offsetDateTime, EncoderContext encoderContext) {
-        final Document document = new Document();
-        document.put(DATE_FIELD, Date.from(offsetDateTime.toInstant()));
-        document.put(OFFSET_FIELD, offsetDateTime.getOffset().toString());
         bsonWriter.writeStartDocument();
         bsonWriter.writeDateTime(DATE_FIELD, offsetDateTime.toInstant().toEpochMilli());
         bsonWriter.writeString(OFFSET_FIELD, offsetDateTime.getOffset().toString());
+        bsonWriter.writeInt64(EPOCH_MILLI, offsetDateTime.toInstant().toEpochMilli());
         bsonWriter.writeEndDocument();
     }
 

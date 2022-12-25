@@ -17,6 +17,7 @@ import org.springframework.data.mongodb.core.aggregation.*;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,9 @@ import java.util.Objects;
 public class BiTempService {
     public final MongoTemplate mongoTemplate;
     public MongoCollection<Document> mongoCollection;
+
+    //EST
+    public static final ZoneOffset zoneOffSet= ZoneOffset.of("-05:00");
 
     @Autowired
     public BiTempService(MongoTemplate mongoTemplate, MongoCollection<Document> mongoCollection) {
@@ -300,16 +304,30 @@ public class BiTempService {
     public List<BiTempObject> getRelatedBiTempData(GetRequest getRequest) {
         log.debug("Get Related BiTemp Data: {}", getRequest);
 
+        EffectiveMeta effectiveMetaQuery = new EffectiveMeta(
+                getRequest.effectiveFrom().atOffset(zoneOffSet),
+                getRequest.effectiveTo().atOffset(zoneOffSet));
+
+        Long newFrom = effectiveMetaQuery.validFrom().toInstant().toEpochMilli();
+        Long newTo = effectiveMetaQuery.validTo().toInstant().toEpochMilli();
+
         List<Document> pipeline = new ArrayList<>();
         Criteria matchKey = Criteria.where("key").is(getRequest.id());
 
-        //getRequest.effectiveFrom() between "effectiveMeta.validFrom.dateTime" and "effectiveMeta.validTo.dateTime"
-        Criteria matchEffectiveFromS = Criteria.where("effectiveMeta.validFrom.dateTime").lte(getRequest.effectiveFrom());
-        Criteria matchEffectiveFromE = Criteria.where("effectiveMeta.validTo.dateTime").gte(getRequest.effectiveFrom());
+        /*Criteria matchEffectiveFromS = Criteria.where("effectiveMeta.validFrom.dateTime").lte(effectiveMetaQuery.validFrom());
+        Criteria matchEffectiveFromE = Criteria.where("effectiveMeta.validTo.dateTime").gte(effectiveMetaQuery.validFrom());
         Criteria matchEffectiveFrom = new Criteria().andOperator(matchEffectiveFromS, matchEffectiveFromE);
 
-        Criteria matchEffectiveToS = Criteria.where("effectiveMeta.validFrom.dateTime").lte(getRequest.effectiveTo());
-        Criteria matchEffectiveToE = Criteria.where("effectiveMeta.validTo.dateTime").gte(getRequest.effectiveTo());
+        Criteria matchEffectiveToS = Criteria.where("effectiveMeta.validFrom.dateTime").lte(effectiveMetaQuery.validTo());
+        Criteria matchEffectiveToE = Criteria.where("effectiveMeta.validTo.dateTime").gte(effectiveMetaQuery.validTo());
+        Criteria matchEffectiveTo = new Criteria().andOperator(matchEffectiveToS, matchEffectiveToE);*/
+
+        Criteria matchEffectiveFromS = Criteria.where("effectiveMeta.validFrom.ephochMilli").lte(newFrom);
+        Criteria matchEffectiveFromE = Criteria.where("effectiveMeta.validTo.ephochMilli").gte(newFrom);
+        Criteria matchEffectiveFrom = new Criteria().andOperator(matchEffectiveFromS, matchEffectiveFromE);
+
+        Criteria matchEffectiveToS = Criteria.where("effectiveMeta.validFrom.ephochMilli").lte(newTo);
+        Criteria matchEffectiveToE = Criteria.where("effectiveMeta.validTo.ephochMilli").gte(newTo);
         Criteria matchEffectiveTo = new Criteria().andOperator(matchEffectiveToS, matchEffectiveToE);
 
         Criteria matchEffective = new Criteria().orOperator(matchEffectiveFrom, matchEffectiveTo);
@@ -317,7 +335,7 @@ public class BiTempService {
         Criteria matchCriteria = new Criteria().andOperator(matchKey, matchEffective);
 
         final MatchOperation matchStage = Aggregation.match(matchCriteria);
-        final SortOperation sortStage = Aggregation.sort(Sort.Direction.DESC, "effectiveMeta.validFrom.dateTime");
+        final SortOperation sortStage = Aggregation.sort(Sort.Direction.DESC, "effectiveMeta.validFrom.ephochMilli");
 
         final Aggregation aggregation = Aggregation.newAggregation(matchStage, sortStage);
 
@@ -329,8 +347,8 @@ public class BiTempService {
 
     private static BiTempObject convertRequestToBiTempObject(CreateRequest createRequest) {
         EffectiveMeta effectiveMeta = new EffectiveMeta(
-                createRequest.effectiveFrom().atOffset(ZoneOffset.UTC),
-                createRequest.effectiveTo().atOffset(ZoneOffset.UTC));
+                createRequest.effectiveFrom().atOffset(zoneOffSet),
+                createRequest.effectiveTo().atOffset(zoneOffSet));
         RecordMeta recordMeta = new RecordMeta(
                 createRequest.createdBy(),
                 OffsetDateTime.now(),
