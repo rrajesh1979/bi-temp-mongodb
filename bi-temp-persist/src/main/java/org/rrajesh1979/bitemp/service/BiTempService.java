@@ -15,10 +15,7 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.data.mongodb.core.aggregation.*;
 
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -53,22 +50,16 @@ public class BiTempService {
 
         if (relatedBiTempData.size() == 1) {
             //Scenario 1: One Matching Record
-            LocalDateTime newFrom = createRequest.effectiveFrom();
-            LocalDateTime newTo = createRequest.effectiveTo();
+            long newFrom = createRequest.effectiveFrom().atOffset(zoneOffSet).toInstant().toEpochMilli();
+            long newTo = createRequest.effectiveTo().atOffset(zoneOffSet).toInstant().toEpochMilli();
 
-            OffsetDateTime existingFromDateTime = relatedBiTempData.get(0).effectiveMeta().validFrom();
-            String existingFromOffset = relatedBiTempData.get(0).effectiveMeta().validFrom().getOffset().toString();
-            LocalDateTime existingFrom = LocalDateTime.ofInstant(existingFromDateTime.toInstant(), ZoneOffset.of(existingFromOffset));
-
-            OffsetDateTime existingToDateTime = relatedBiTempData.get(0).effectiveMeta().validTo();
-            String existingToOffset = relatedBiTempData.get(0).effectiveMeta().validTo().getOffset().toString();
-            LocalDateTime existingTo = LocalDateTime.ofInstant(existingToDateTime.toInstant(), ZoneOffset.of(existingToOffset));
+            long existingFrom = relatedBiTempData.get(0).effectiveMeta().validFrom().toInstant().toEpochMilli();
+            long existingTo = relatedBiTempData.get(0).effectiveMeta().validTo().toInstant().toEpochMilli();
 
             Object existingData = relatedBiTempData.get(0).data();
-
             ObjectId existingId = relatedBiTempData.get(0)._id();
 
-            if (newFrom.isEqual(existingFrom) && newTo.isEqual(existingTo)) {
+            if (newFrom == existingFrom && newTo == existingTo) {
                 // Scenario 1.1: Exact Match. [NewFrom, NewTo] = [ExistingFrom, ExistingTo]
                 // Ex: New[2022-12-25, 2022-12-31] = Existing[2022-12-25, 2022-12-31]
                 // Update the existing record
@@ -81,7 +72,7 @@ public class BiTempService {
                 log.info("Update Result: {}", updateResult);
                 return updateResult.toString();
 
-            } else if (newFrom.isAfter(existingFrom) && newTo.isEqual(existingTo) ) {
+            } else if (newFrom > existingFrom && newTo == existingTo ) {
                 // Scenario 1.2: New From is after existing From and New To is equal to existing To
                 // Ex: New[2022-12-26, 2022-12-31] = Existing[2022-12-25, 2022-12-31]
                 // Result: Existing[2022-12-25, 2022-12-26 - 1 second] and New[2022-12-26, 2022-12-31]
@@ -89,7 +80,7 @@ public class BiTempService {
                 log.info("Scenario 1.2: New From is after existing From and New To is equal to existing To");
                 UpdateResult updateResult = mongoCollection.updateOne(
                         new Document("_id", existingId),
-                        new Document("$set", new Document("effectiveTo", newFrom.minusSeconds(1)))
+                        new Document("$set", new Document("effectiveMeta", convertEphochMilliToEffectiveMeta(existingFrom, newFrom - 1000)))
                         //TODO: Update UpdatedBy and UpdatedOn
                 );
                 log.info("Update Result: {}", updateResult);
@@ -98,7 +89,7 @@ public class BiTempService {
 
                 return updateResult + " & " + insertResult;
 
-            } else if (newFrom.isBefore(existingFrom) && newTo.isEqual(existingTo)) {
+            } else if (newFrom < existingFrom && newTo == existingTo) {
                 //Scenario 1.3: New From is before existing From and New To is equal to existing To
                 // Ex: New[2022-12-24, 2022-12-31] = Existing[2022-12-25, 2022-12-31]
                 // Result: Existing[2022-12-25, 2022-12-31] and New[2022-12-24, 2022-12-25 - 1 second]
@@ -110,12 +101,12 @@ public class BiTempService {
                         createRequest.data(),
                         createRequest.createdBy(),
                         createRequest.effectiveFrom(),
-                        existingTo.minusSeconds(1)
+                        LocalDateTime.ofInstant(Instant.ofEpochMilli(existingTo - 1000), zoneOffSet)
                 );
 
                 return insertBiTempData(newCreateRequest);
 
-            } else if (newFrom.isEqual(existingFrom) && newTo.isBefore(existingTo)) {
+            } else if (newFrom == existingFrom && newTo < existingTo) {
                 //Scenario 1.4: New From is equal to existing From and New To is before existing To
                 // Ex: New[2022-12-25, 2022-12-30] = Existing[2022-12-25, 2022-12-31]
                 // Result: Existing[2022-12-30 + 1 second, 2022-12-31] and New[2022-12-25, 2022-12-30]
@@ -124,7 +115,9 @@ public class BiTempService {
                 log.info("Scenario 1.4: New From is equal to existing From and New To is before existing To");
                 UpdateResult updateResult = mongoCollection.updateOne(
                         new Document("_id", existingId),
-                        new Document("$set", new Document("effectiveFrom", newTo.plusSeconds(1)))
+                        new Document("$set",
+                                new Document("effectiveMeta", convertEphochMilliToEffectiveMeta(newTo + 1000, existingTo))
+                        )
                         //TODO: Update UpdatedBy and UpdatedOn
                 );
                 log.info("Update Result: {}", updateResult);
@@ -133,7 +126,7 @@ public class BiTempService {
 
                 return updateResult + " & " + insertResult;
 
-            } else if (newFrom.isEqual(existingFrom) && newTo.isAfter(existingTo)) {
+            } else if (newFrom == existingFrom && newTo > existingTo) {
                 //Scenario 1.5: New From is equal to existing From and New To is after existing To
                 // Ex: New[2022-12-25, 2023-01-01] D1 = Existing[2022-12-25, 2022-12-31] D2
                 // Result: Existing[2022-12-25, 2022-12-31] D2 and New[2022-12-31 + 1 second, 2023-01-01] D1
@@ -144,13 +137,13 @@ public class BiTempService {
                         createRequest.key(),
                         createRequest.data(),
                         createRequest.createdBy(),
-                        existingTo.plusSeconds(1),
+                        LocalDateTime.ofInstant(Instant.ofEpochMilli(existingTo + 1000), zoneOffSet),
                         createRequest.effectiveTo()
                 );
 
                 return insertBiTempData(newCreateRequest);
 
-            } else if (newFrom.isAfter(existingFrom) && newTo.isBefore(existingTo)) {
+            } else if (newFrom > existingFrom && newTo < existingTo) {
                 //Scenario 1.6: New From is after existing From and New To is before existing To
                 // Ex: New[2022-12-26, 2022-12-30] D1 = Existing[2022-12-25, 2022-12-31] D2
                 // Result: ExistingSplitA[2022-12-25, 2022-12-26 - 1 second] D2, New[2022-12-26, 2022-12-30] D1, ExistingSplitB[2022-12-30 + 1 second, 2022-12-31] D2
@@ -160,7 +153,7 @@ public class BiTempService {
                 log.info("Scenario 1.6: New From is after existing From and New To is before existing To");
                 UpdateResult updateResultA = mongoCollection.updateOne(
                         new Document("_id", existingId),
-                        new Document("$set", new Document("effectiveTo", newFrom.minusSeconds(1)))
+                        new Document("$set", new Document("effectiveMeta", convertEphochMilliToEffectiveMeta(existingFrom, newFrom - 1000)))
                         //TODO: Update UpdatedBy and UpdatedOn
                 );
                 log.info("Update Result A: {}", updateResultA);
@@ -171,13 +164,13 @@ public class BiTempService {
                         createRequest.key(),
                         existingData,
                         createRequest.createdBy(),
-                        newTo.plusSeconds(1),
-                        existingTo
+                        LocalDateTime.ofInstant(Instant.ofEpochMilli(newTo + 1000), zoneOffSet),
+                        LocalDateTime.ofInstant(Instant.ofEpochMilli(existingTo), zoneOffSet)
                 );
 
                 return updateResultA + " & " + insertResult + " & " + insertBiTempData(newCreateRequest);
 
-            } else if (newFrom.isBefore(existingFrom) && newTo.isAfter(existingTo)) {
+            } else if (newFrom < existingFrom && newTo > existingTo) {
                 //Scenario 1.7: New From is before existing From and New To is after existing To
                 // Ex: New[2022-12-24, 2023-01-01] = Existing[2022-12-25, 2022-12-31]
                 // Result: NewSplitA[2022-12-24, 2022-12-25 - 1 second], Existing[2022-12-25, 2022-12-31], NewSplitB[2022-12-31 + 1 second, 2023-01-01]
@@ -190,7 +183,7 @@ public class BiTempService {
                         createRequest.data(),
                         createRequest.createdBy(),
                         createRequest.effectiveFrom(),
-                        existingFrom.minusSeconds(1)
+                        LocalDateTime.ofInstant(Instant.ofEpochMilli(existingFrom - 1000), zoneOffSet)
                 );
 
                 String insertResultA = insertBiTempData(newCreateRequestA);
@@ -199,7 +192,7 @@ public class BiTempService {
                         createRequest.key(),
                         createRequest.data(),
                         createRequest.createdBy(),
-                        existingTo.plusSeconds(1),
+                        LocalDateTime.ofInstant(Instant.ofEpochMilli(existingTo + 1000), zoneOffSet),
                         createRequest.effectiveTo()
                 );
 
@@ -207,7 +200,7 @@ public class BiTempService {
 
                 return insertResultA + " & " + insertResultB;
 
-            } else if (newFrom.isAfter(existingFrom) && newTo.isAfter(existingTo)) {
+            } else if (newFrom > existingFrom && newTo > existingTo) {
                 //Scenario 1.8: New From is after existing From and New To is after existing To
                 // Ex: New[2022-12-26, 2023-01-01] = Existing[2022-12-25, 2022-12-31]
                 // Result: Existing[2022-12-25, 2022-12-26 - 1 second], New[2022-12-26, 2023-01-01]
@@ -217,7 +210,7 @@ public class BiTempService {
 
                 UpdateResult updateResult = mongoCollection.updateOne(
                         new Document("_id", existingId),
-                        new Document("$set", new Document("effectiveTo", newFrom.minusSeconds(1)))
+                        new Document("$set", new Document("effectiveMeta", convertEphochMilliToEffectiveMeta(existingFrom, newFrom - 1000)))
                         //TODO: Update UpdatedBy and UpdatedOn
                 );
                 log.info("Update Result: {}", updateResult);
@@ -226,7 +219,7 @@ public class BiTempService {
 
                 return updateResult + " & " + insertResult;
 
-            } else if (newFrom.isBefore(existingFrom) && newTo.isBefore(existingTo)) {
+            } else if (newFrom < existingFrom && newTo < existingTo) {
                 //Scenario 1.9: New From is before existing From and New To is before existing To
                 // Ex: New[2022-12-24, 2022-12-30] = Existing[2022-12-25, 2022-12-31]
                 // Result: New[2022-12-24, 2022-12-30], Existing[2022-12-30 + 1 second, 2022-12-31]
@@ -238,7 +231,7 @@ public class BiTempService {
 
                 UpdateResult updateResult = mongoCollection.updateOne(
                         new Document("_id", existingId),
-                        new Document("$set", new Document("effectiveFrom", newTo.plusSeconds(1)))
+                        new Document("$set", new Document("effectiveMeta", convertEphochMilliToEffectiveMeta(newTo + 1000, existingTo)))
                         //TODO: Update UpdatedBy and UpdatedOn
                 );
 
@@ -251,7 +244,42 @@ public class BiTempService {
 
         } else if (relatedBiTempData.size() == 2) {
             //Scenario 2: Two Matching Records
-            return "Update related BiTempData";
+            // Ex: New[2022-12-26, 2022-01-01] = Existing[2022-12-25, 2022-12-30] & Existing[2022-12-31, 2023-01-05]
+            // Result: Existing[2022-12-25, 2022-12-26 - 1 second], New[2022-12-26, 2023-01-01], Existing[2023-01-01 + 1 second, 2023-01-05]
+            // Update the existing record's validTo to new record's effectiveFrom - 1 second and insert new record
+            // Insert new record with validFrom = new record's effectiveTo + 1 second and validTo = existing record's effectiveTo
+
+            log.info("Scenario 2: Two Matching Records");
+
+            long newFrom = createRequest.effectiveFrom().atOffset(zoneOffSet).toInstant().toEpochMilli();
+            long newTo = createRequest.effectiveTo().atOffset(zoneOffSet).toInstant().toEpochMilli();
+
+            long existingFromA = relatedBiTempData.get(0).effectiveMeta().validFrom().toInstant().toEpochMilli();
+            long existingToA = newFrom - 1000;
+            ObjectId existingIdA = relatedBiTempData.get(0)._id();
+            Object existingDataA = relatedBiTempData.get(0).data();
+
+            long existingFromB = newTo + 1000;
+            long existingToB = relatedBiTempData.get(1).effectiveMeta().validTo().toInstant().toEpochMilli();
+            ObjectId existingIdB = relatedBiTempData.get(1)._id();
+            Object existingDataB = relatedBiTempData.get(1).data();
+
+            UpdateResult updateResultA = mongoCollection.updateOne(
+                    new Document("_id", existingIdA),
+                    new Document("$set",
+                            new Document("effectiveMeta", convertEphochMilliToEffectiveMeta(existingFromA, existingToA))
+                    ));
+
+            String insertResult = insertBiTempData(createRequest);
+
+            UpdateResult updateResultB = mongoCollection.updateOne(
+                    new Document("_id", existingIdB),
+                    new Document("$set",
+                            new Document("effectiveMeta", convertEphochMilliToEffectiveMeta(existingFromB, existingToB))
+                    ));
+
+            return updateResultA + " & " + insertResult + " & " + updateResultB;
+
         } else if (relatedBiTempData.size() > 2) {
             //Scenario 2: Two Matching Records
             return "Invalid scenario";
@@ -335,7 +363,7 @@ public class BiTempService {
         Criteria matchCriteria = new Criteria().andOperator(matchKey, matchEffective);
 
         final MatchOperation matchStage = Aggregation.match(matchCriteria);
-        final SortOperation sortStage = Aggregation.sort(Sort.Direction.DESC, "effectiveMeta.validFrom.ephochMilli");
+        final SortOperation sortStage = Aggregation.sort(Sort.Direction.ASC, "effectiveMeta.validFrom.ephochMilli");
 
         final Aggregation aggregation = Aggregation.newAggregation(matchStage, sortStage);
 
@@ -365,4 +393,12 @@ public class BiTempService {
         log.debug("BiTemp Object: {}", biTempObject);
         return biTempObject;
     }
+
+    //Convert FromEphochMilli, ToEphochMilli to EffectiveMeta
+    private static EffectiveMeta convertEphochMilliToEffectiveMeta(Long fromEphochMilli, Long toEphochMilli) {
+        OffsetDateTime fromDateTime = Instant.ofEpochMilli(fromEphochMilli).atOffset(zoneOffSet);
+        OffsetDateTime toDateTime = Instant.ofEpochMilli(toEphochMilli).atOffset(zoneOffSet);
+        return new EffectiveMeta(fromDateTime, toDateTime);
+    }
+
 }
