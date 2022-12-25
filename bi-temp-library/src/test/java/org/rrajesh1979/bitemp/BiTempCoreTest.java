@@ -25,35 +25,35 @@ public class BiTempCoreTest {
 
     @Test
     public void testBiTempModel() {
-        OffsetDateTime validFrom = OffsetDateTime.of(LocalDateTime.of(2021, 1, 1, 0, 0, 0), ZoneOffset.UTC);
-        OffsetDateTime validTo = OffsetDateTime.of(LocalDateTime.MAX, ZoneOffset.UTC);
-        EffectiveMeta effectiveMeta = new EffectiveMeta(validFrom, validTo);
-        log.debug("LocalDateTime.MAX: {}", LocalDateTime.MAX);
-        log.debug("Effective Meta: {}", effectiveMeta);
-
-        //Create RecordMeta
-        String createdBy = "Rajesh";
-        OffsetDateTime createdAt = OffsetDateTime.now();
-        String updatedBy = "Rajesh";
-        OffsetDateTime updatedAt = OffsetDateTime.now();
-        var recordMeta = new RecordMeta(createdBy, createdAt, updatedBy, updatedAt);
-        log.debug("Record Meta: {}", recordMeta);
-
-        //Create JSON of TestRecord
-        Gson gson = new Gson();
-        TestRecord testRecord = new TestRecord("Rajesh", 40);
-        String json = gson.toJson(testRecord);
-        log.debug("JSON: {}", json);
-
-        //Create BiTempObject
-        BiTempObject biTempObject = new BiTempObject(
-                10,
-                testRecord,
-                recordMeta,
-                effectiveMeta,
-                null,
-                null);
-        log.debug("BiTempObject: {}", biTempObject);
+//        OffsetDateTime validFrom = OffsetDateTime.of(LocalDateTime.of(2021, 1, 1, 0, 0, 0), ZoneOffset.UTC);
+//        OffsetDateTime validTo = OffsetDateTime.of(LocalDateTime.MAX, ZoneOffset.UTC);
+//        EffectiveMeta effectiveMeta = new EffectiveMeta(validFrom, validTo);
+//        log.debug("LocalDateTime.MAX: {}", LocalDateTime.MAX);
+//        log.debug("Effective Meta: {}", effectiveMeta);
+//
+//        //Create RecordMeta
+//        String createdBy = "Rajesh";
+//        OffsetDateTime createdAt = OffsetDateTime.now();
+//        String updatedBy = "Rajesh";
+//        OffsetDateTime updatedAt = OffsetDateTime.now();
+//        var recordMeta = new RecordMeta(createdBy, createdAt, updatedBy, updatedAt);
+//        log.debug("Record Meta: {}", recordMeta);
+//
+//        //Create JSON of TestRecord
+//        Gson gson = new Gson();
+//        TestRecord testRecord = new TestRecord("Rajesh", 40);
+//        String json = gson.toJson(testRecord);
+//        log.debug("JSON: {}", json);
+//
+//        //Create BiTempObject
+//        BiTempObject biTempObject = new BiTempObject(
+//                10,
+//                testRecord,
+//                recordMeta,
+//                effectiveMeta,
+//                null,
+//                null);
+//        log.debug("BiTempObject: {}", biTempObject);
 
     }
 }
