@@ -5,7 +5,7 @@ import org.bson.Document;
 public class BiTempUtil {
     public static Document toBiTempObjectToDocument(BiTempObject biTempObject) {
         return new Document()
-                .append("key", biTempObject.id())
+                .append("key", biTempObject.key())
                 .append("data", biTempObject.data())
                 .append("recordMeta", biTempObject.recordMeta())
                 .append("effectiveMeta", biTempObject.effectiveMeta());
