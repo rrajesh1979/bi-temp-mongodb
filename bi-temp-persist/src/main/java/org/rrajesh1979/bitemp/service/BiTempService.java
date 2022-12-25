@@ -146,6 +146,7 @@ public class BiTempService {
                 recordMeta,
                 effectiveMeta,
                 null,
+                null,
                 null);
         log.debug("BiTemp Object: {}", biTempObject);
         return biTempObject;
