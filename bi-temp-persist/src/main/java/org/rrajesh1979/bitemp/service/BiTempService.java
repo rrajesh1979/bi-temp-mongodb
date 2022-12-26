@@ -70,7 +70,11 @@ public class BiTempService {
                         //TODO: Update UpdatedBy and UpdatedOn
                 );
                 log.info("Update Result: {}", updateResult);
-                return updateResult.toString();
+                CreateResponse createResponse = new CreateResponse(
+                        List.of(),
+                        List.of(updateResult.toString())
+                );
+                return createResponse.toString();
 
             } else if (newFrom > existingFrom && newTo == existingTo ) {
                 // Scenario 1.2: New From is after existing From and New To is equal to existing To
@@ -87,24 +91,36 @@ public class BiTempService {
 
                 String insertResult = insertBiTempData(createRequest);
 
-                return updateResult + " & " + insertResult;
+                CreateResponse createResponse = new CreateResponse(
+                        List.of(insertResult),
+                        List.of(updateResult.toString())
+                );
+
+                return createResponse.toString();
 
             } else if (newFrom < existingFrom && newTo == existingTo) {
                 //Scenario 1.3: New From is before existing From and New To is equal to existing To
                 // Ex: New[2022-12-24, 2022-12-31] = Existing[2022-12-25, 2022-12-31]
-                // Result: Existing[2022-12-25, 2022-12-31] and New[2022-12-24, 2022-12-25 - 1 second]
-                // Update the new record's validTo to existing record's effectiveFrom - 1 second and insert new record
+                // Result: Existing[2022-12-24, 2022-12-31]
+                // Update the existing record's validFrom to new record's effectiveFrom.
+                // Update the existing record's data. No need to insert new record
 
                 log.info("Scenario 1.3: New From is before existing From and New To is equal to existing To");
-                CreateRequest newCreateRequest = new CreateRequest(
-                        createRequest.key(),
-                        createRequest.data(),
-                        createRequest.createdBy(),
-                        createRequest.effectiveFrom(),
-                        LocalDateTime.ofInstant(Instant.ofEpochMilli(existingTo - 1000), zoneOffSet)
+                UpdateResult updateResult = mongoCollection.updateOne(
+                        new Document("_id", existingId),
+                        new Document("$set",
+                                new Document("effectiveMeta", convertEpochMilliToEffectiveMeta(newFrom, existingTo))
+                                .append("data", createRequest.data()))
                 );
 
-                return insertBiTempData(newCreateRequest);
+                log.info("Update Result: {}", updateResult);
+
+                CreateResponse createResponse = new CreateResponse(
+                        List.of(),
+                        List.of(updateResult.toString())
+                );
+
+                return createResponse.toString();
 
             } else if (newFrom == existingFrom && newTo < existingTo) {
                 //Scenario 1.4: New From is equal to existing From and New To is before existing To
@@ -124,7 +140,12 @@ public class BiTempService {
 
                 String insertResult = insertBiTempData(createRequest);
 
-                return updateResult + " & " + insertResult;
+                CreateResponse createResponse = new CreateResponse(
+                        List.of(insertResult),
+                        List.of(updateResult.toString())
+                );
+
+                return createResponse.toString();
 
             } else if (newFrom == existingFrom && newTo > existingTo) {
                 //Scenario 1.5: New From is equal to existing From and New To is after existing To
@@ -141,7 +162,14 @@ public class BiTempService {
                         createRequest.effectiveTo()
                 );
 
-                return insertBiTempData(newCreateRequest);
+                String insertResult = insertBiTempData(newCreateRequest);
+
+                CreateResponse createResponse = new CreateResponse(
+                        List.of(insertResult),
+                        List.of()
+                );
+
+                return createResponse.toString();
 
             } else if (newFrom > existingFrom && newTo < existingTo) {
                 //Scenario 1.6: New From is after existing From and New To is before existing To
@@ -168,7 +196,14 @@ public class BiTempService {
                         LocalDateTime.ofInstant(Instant.ofEpochMilli(existingTo), zoneOffSet)
                 );
 
-                return updateResultA + " & " + insertResult + " & " + insertBiTempData(newCreateRequest);
+                String insertResultB = insertBiTempData(newCreateRequest);
+
+                CreateResponse createResponse = new CreateResponse(
+                        List.of(insertResult, insertResultB),
+                        List.of(updateResultA.toString())
+                );
+
+                return createResponse.toString();
 
             } else if (newFrom < existingFrom && newTo > existingTo) {
                 //Scenario 1.7: New From is before existing From and New To is after existing To
@@ -198,7 +233,10 @@ public class BiTempService {
 
                 String insertResultB = insertBiTempData(newCreateRequestB);
 
-                return insertResultA + " & " + insertResultB;
+                CreateResponse createResponse = new CreateResponse(
+                        List.of(insertResultA, insertResultB),
+                        List.of()
+                );
 
             } else if (newFrom > existingFrom && newTo > existingTo) {
                 //Scenario 1.8: New From is after existing From and New To is after existing To
@@ -217,7 +255,12 @@ public class BiTempService {
 
                 String insertResult = insertBiTempData(createRequest);
 
-                return updateResult + " & " + insertResult;
+                CreateResponse createResponse = new CreateResponse(
+                        List.of(insertResult),
+                        List.of(updateResult.toString())
+                );
+
+                return createResponse.toString();
 
             } else if (newFrom < existingFrom && newTo < existingTo) {
                 //Scenario 1.9: New From is before existing From and New To is before existing To
@@ -237,7 +280,12 @@ public class BiTempService {
 
                 log.info("Update Result: {}", updateResult);
 
-                return insertResult + " & " + updateResult;
+                CreateResponse createResponse = new CreateResponse(
+                        List.of(insertResult),
+                        List.of(updateResult.toString())
+                );
+
+                return createResponse.toString();
             }
 
             return "Did not match any scenario";
@@ -276,13 +324,32 @@ public class BiTempService {
                             new Document("effectiveMeta", convertEpochMilliToEffectiveMeta(existingFromB, existingToB))
                     ));
 
-            return updateResultA + " & " + insertResult + " & " + updateResultB;
+            CreateResponse createResponse = new CreateResponse(
+                    List.of(insertResult),
+                    List.of(updateResultA.toString(), updateResultB.toString())
+            );
+
+            return createResponse.toString();
 
         } else if (relatedBiTempData.size() > 2) {
-            //Scenario 2: More than Two Matching Records. Avoid getting into this scenario
+            //Scenario Invalid: More than Two Matching Records. Avoid getting into this scenario
             return "Invalid scenario";
         } else {
-            return insertBiTempData(createRequest);
+            //Scenario 3: No Matching Records
+            // Ex: New[2022-12-26, 2022-01-01] = Existing[2022-12-25, 2022-12-30] & Existing[2022-12-31, 2023-01-05]
+            // Result: Existing[2022-12-25, 2022-12-30], New[2022-12-26, 2023-01-01], Existing[2023-01-01 + 1 second, 2023-01-05]
+            // Insert new record with validFrom = new record's effectiveTo + 1 second and validTo = existing record's effectiveTo
+
+            log.info("Scenario 3: No Matching Records");
+
+            String insertResult = insertBiTempData(createRequest);
+
+            CreateResponse createResponse = new CreateResponse(
+                    List.of(insertResult),
+                    List.of()
+            );
+
+            return createResponse.toString();
         }
     }
 
@@ -326,6 +393,21 @@ public class BiTempService {
         return new ArrayList<>(aggregationResults.getMappedResults());
     }
 
+    public BiTempObject getBiTempDataById(ObjectId id) {
+        log.debug("Get BiTemp Data by Id: {}", id);
+
+        Criteria matchId = Criteria.where("_id").is(id);
+
+        final MatchOperation matchStage = Aggregation.match(matchId);
+
+        final Aggregation aggregation = Aggregation.newAggregation(matchStage);
+
+        AggregationResults<BiTempObject> aggregationResults =
+                mongoTemplate.aggregate(aggregation, "forex", BiTempObject.class);
+
+        return aggregationResults.getUniqueMappedResult();
+    }
+
     public List<BiTempObject> getRelatedBiTempData(GetRequest getRequest) {
         log.debug("Get Related BiTemp Data: {}", getRequest);
 
@@ -346,7 +428,11 @@ public class BiTempService {
         Criteria matchEffectiveToE = Criteria.where("effectiveMeta.validTo.epochMilli").gte(newTo);
         Criteria matchEffectiveTo = new Criteria().andOperator(matchEffectiveToS, matchEffectiveToE);
 
-        Criteria matchEffective = new Criteria().orOperator(matchEffectiveFrom, matchEffectiveTo);
+        Criteria matchEffectiveFromBoundary = Criteria.where("effectiveMeta.validFrom.epochMilli").gt(newFrom);
+        Criteria matchEffectiveToBoundary = Criteria.where("effectiveMeta.validTo.epochMilli").lt(newTo);
+        Criteria matchEffectiveBoundary = new Criteria().andOperator(matchEffectiveFromBoundary, matchEffectiveToBoundary);
+
+        Criteria matchEffective = new Criteria().orOperator(matchEffectiveFrom, matchEffectiveTo, matchEffectiveBoundary);
 
         Criteria matchCriteria = new Criteria().andOperator(matchKey, matchEffective);
 
