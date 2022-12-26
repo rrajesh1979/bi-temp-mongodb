@@ -436,7 +436,9 @@ public class BiTempService {
 
         Criteria matchEffective = new Criteria().orOperator(matchEffectiveFrom, matchEffectiveTo, matchEffectiveBoundary);
 
-        Criteria matchCriteria = new Criteria().andOperator(matchKey, matchEffective);
+        Criteria matchActive = Criteria.where("isActive").is(true);
+
+        Criteria matchCriteria = new Criteria().andOperator(matchKey, matchEffective, matchActive);
 
         final MatchOperation matchStage = Aggregation.match(matchCriteria);
         final SortOperation sortStage = Aggregation.sort(Sort.Direction.ASC, "effectiveMeta.validFrom.epochMilli");
@@ -485,14 +487,14 @@ public class BiTempService {
         //Mark all related records as inactive
         if (biTempObjects.size() == 1) {
             BiTempObject biTempObject = biTempObjects.get(0);
-            return markRecordAsInactive(biTempObject._id());
+            return markRecordAsInactive(biTempObject._id(), deleteRequest.deletedBy());
         } else {
             return "Invalid request";
         }
     }
 
     //Marking the record as inactive. Input is the ObjectId of the record
-    public String markRecordAsInactive(ObjectId id) {
+    public String markRecordAsInactive(ObjectId id, String deletedBy) {
         log.debug("Marking record as inactive: {}", id);
 
         Query query = new Query();
@@ -500,6 +502,8 @@ public class BiTempService {
 
         Update update = new Update();
         update.set("isActive", false);
+        update.set("recordMeta.deletedBy", deletedBy);
+        update.set("recordMeta.deletedAt", OffsetDateTime.now());
 
         UpdateResult updateResult = mongoCollection.updateOne(
                 query.getQueryObject(),

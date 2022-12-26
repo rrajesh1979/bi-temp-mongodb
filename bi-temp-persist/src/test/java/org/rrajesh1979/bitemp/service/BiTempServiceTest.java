@@ -13,6 +13,7 @@ import org.junit.jupiter.api.*;
 import org.rrajesh1979.bitemp.config.MongoConfig;
 import org.rrajesh1979.bitemp.model.BiTempObject;
 import org.rrajesh1979.bitemp.model.CreateRequest;
+import org.rrajesh1979.bitemp.model.DeleteRequest;
 import org.rrajesh1979.bitemp.model.GetRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
@@ -61,6 +62,7 @@ class BiTempServiceTest {
     static final String TEST_DATA_S1_7 = "/Users/rajesh/Learn/bi-temp-mongodb/bi-temp-persist/src/test/resources/data/test_data_s1_7.json";
     static final String TEST_DATA_S1_8 = "/Users/rajesh/Learn/bi-temp-mongodb/bi-temp-persist/src/test/resources/data/test_data_s1_8.json";
     static final String TEST_DATA_S1_9 = "/Users/rajesh/Learn/bi-temp-mongodb/bi-temp-persist/src/test/resources/data/test_data_s1_9.json";
+    static final String TEST_DATA_DELETE = "/Users/rajesh/Learn/bi-temp-mongodb/bi-temp-persist/src/test/resources/data/test_data_delete.json";
 
     static {
         mongoDBContainer.start();
@@ -150,8 +152,8 @@ class BiTempServiceTest {
                     Map<String, Object> map = (Map<String, Object>) item;
                     CreateRequest createRequest = new CreateRequest(
                             map.get("key").toString(),
-                            map.get("data").toString(),
-                            map.get("createdBy").toString(),
+                            map.get("data") == null ? null : map.get("data").toString(), //Check for null
+                            map.get("createdBy") == null ? null : map.get("createdBy").toString(), //Check for null
                             LocalDateTime.parse(map.get("effectiveFrom").toString()),
                             LocalDateTime.parse(map.get("effectiveTo").toString())
                     );
@@ -552,6 +554,46 @@ void testScenario1_3() throws IOException {
 
         assertEquals(updatedBiTempObject.effectiveMeta().validFrom().toInstant().toEpochMilli(),
                 newCreateRequest.effectiveTo().toInstant(zoneOffSet).toEpochMilli() + 1000);
+    }
+
+    @Test
+    @Order(12)
+    @DisplayName("Delete / Mark as inactive")
+    void testDelete() throws IOException {
+        //Arrange
+        //Get count before test
+        //Get related objects before test
+        long countBefore = collection.countDocuments();
+
+        List<CreateRequest> scenarioDeleteRequests = new ArrayList<>();
+        buildTestData(scenarioDeleteRequests, TEST_DATA_DELETE);
+        DeleteRequest newDeleteRequest = new DeleteRequest(
+                scenarioDeleteRequests.get(0).key(),
+                scenarioDeleteRequests.get(0).createdBy(),
+                scenarioDeleteRequests.get(0).effectiveFrom(),
+                scenarioDeleteRequests.get(0).effectiveTo()
+        );
+        List<BiTempObject> relatedBiTempObjects = biTempService.getRelatedBiTempData(
+                new GetRequest(
+                        newDeleteRequest.key(),
+                        newDeleteRequest.effectiveFrom(),
+                        newDeleteRequest.effectiveTo()
+                )
+        );
+        ObjectId relatedIdA = relatedBiTempObjects.get(0)._id();
+
+        //Act
+        //Create new data
+        String updateResult = biTempService.deleteBiTempData(newDeleteRequest);
+        BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
+
+        //Assert
+        long countAfter = collection.countDocuments();
+
+        assert relatedBiTempObjects.size() == 1;
+        assertEquals(countBefore, countAfter);
+
+        assertFalse(updatedBiTempObject.isActive());
     }
 
 }
