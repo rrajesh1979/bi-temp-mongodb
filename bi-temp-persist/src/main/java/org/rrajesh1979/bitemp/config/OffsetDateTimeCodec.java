@@ -13,7 +13,7 @@ import java.util.Date;
 public class OffsetDateTimeCodec implements Codec<OffsetDateTime> {
     public static final String DATE_FIELD = "dateTime";
     public static final String OFFSET_FIELD = "offset";
-    public static final String EPOCH_MILLI = "ephochMilli";
+    public static final String EPOCH_MILLI = "epochMilli";
 
     @Override
     public OffsetDateTime decode(BsonReader bsonReader, DecoderContext decoderContext) {
