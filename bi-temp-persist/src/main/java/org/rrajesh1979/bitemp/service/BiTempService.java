@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import org.springframework.data.mongodb.core.aggregation.*;
@@ -461,11 +463,55 @@ public class BiTempService {
                 createRequest.data(),
                 recordMeta,
                 effectiveMeta,
-                null,
-                null,
+                true,
                 null);
         log.debug("BiTemp Object: {}", biTempObject);
         return biTempObject;
+    }
+
+    public String deleteBiTempData(DeleteRequest deleteRequest) {
+        log.debug("Delete BiTemp Data: {}", deleteRequest);
+
+        GetRequest getRequest = new GetRequest(
+                deleteRequest.key(),
+                deleteRequest.effectiveFrom(),
+                deleteRequest.effectiveTo()
+        );
+
+        //Get all related records
+        List<BiTempObject> biTempObjects = getRelatedBiTempData(getRequest);
+
+        //Should be only one record
+        //Mark all related records as inactive
+        if (biTempObjects.size() == 1) {
+            BiTempObject biTempObject = biTempObjects.get(0);
+            return markRecordAsInactive(biTempObject._id());
+        } else {
+            return "Invalid request";
+        }
+    }
+
+    //Marking the record as inactive. Input is the ObjectId of the record
+    public String markRecordAsInactive(ObjectId id) {
+        log.debug("Marking record as inactive: {}", id);
+
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(id));
+
+        Update update = new Update();
+        update.set("isActive", false);
+
+        UpdateResult updateResult = mongoCollection.updateOne(
+                query.getQueryObject(),
+                update.getUpdateObject()
+        );
+
+        CreateResponse createResponse = new CreateResponse(
+                List.of(),
+                List.of(updateResult.toString())
+        );
+
+        return createResponse.toString();
     }
 
     //Convert FromEpochMilli, ToEpochMilli to EffectiveMeta

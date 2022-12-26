@@ -12,8 +12,7 @@ public record BiTempObject(
         Object data,
         RecordMeta recordMeta,
         EffectiveMeta effectiveMeta,
-        Object previousId,
-        Object nextId,
+        boolean isActive,
         ObjectId _id) {
     //Override toString() method to print the object in JSON format
     @Override

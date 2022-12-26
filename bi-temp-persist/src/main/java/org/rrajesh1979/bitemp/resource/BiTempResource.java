@@ -48,4 +48,17 @@ public class BiTempResource {
 
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
+    @DeleteMapping( value = "/delete", headers = ACCEPT_APPLICATION_JSON )
+    public ResponseEntity<String> deleteBiTempData(@RequestBody DeleteRequest deleteRequest) {
+        log.debug("Delete BiTemp Request: {}", deleteRequest);
+
+        String result = biTempService.deleteBiTempData(deleteRequest);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("result", result);
+        response.put("status", "success");
+
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
 }
