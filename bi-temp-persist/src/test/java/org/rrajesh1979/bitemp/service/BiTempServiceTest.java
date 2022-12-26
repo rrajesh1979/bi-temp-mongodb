@@ -152,6 +152,8 @@ class BiTempServiceTest {
     }
 
     private static void buildTestData(List<CreateRequest> createRequests) throws IOException {
+        //Roundabout way to read json array from file to avoid Spring Bug
+
         Gson gson = new Gson();
         Reader reader = Files.newBufferedReader(Paths.get("/Users/rajesh/Learn/bi-temp-mongodb/bi-temp-persist/src/test/resources/data/test_data.json"));
         List list = gson.fromJson(reader, List.class);
