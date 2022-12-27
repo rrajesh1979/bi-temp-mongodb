@@ -27,11 +27,16 @@ public class BiTempResource {
     }
 
     @PostMapping( value = "/create", headers = ACCEPT_APPLICATION_JSON )
-    public ResponseEntity<String> createBiTempData(@RequestBody CreateRequest createRequest) {
+    public ResponseEntity<Map<String, Object>> createBiTempData(@RequestBody CreateRequest createRequest) {
         log.debug("Create BiTemp Data: {}", createRequest);
 
-        String id = biTempService.createBiTempData(createRequest);
-        return ResponseEntity.ok(id);
+        String result = biTempService.createBiTempData(createRequest);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("result", result);
+        response.put("status", "success");
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
 
     }
 
@@ -50,7 +55,7 @@ public class BiTempResource {
     }
 
     @DeleteMapping( value = "/delete", headers = ACCEPT_APPLICATION_JSON )
-    public ResponseEntity<String> deleteBiTempData(@RequestBody DeleteRequest deleteRequest) {
+    public ResponseEntity<Map<String, Object>> deleteBiTempData(@RequestBody DeleteRequest deleteRequest) {
         log.debug("Delete BiTemp Request: {}", deleteRequest);
 
         String result = biTempService.deleteBiTempData(deleteRequest);
@@ -59,6 +64,6 @@ public class BiTempResource {
         response.put("result", result);
         response.put("status", "success");
 
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

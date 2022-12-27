@@ -375,11 +375,14 @@ public class BiTempService {
     public List<Document> getBiTempData(GetRequest getRequest) {
         log.debug("Get BiTemp Data: {}", getRequest);
 
+        Long newFrom = getRequest.effectiveFrom().atOffset(zoneOffSet).toInstant().toEpochMilli();
+        Long newTo = getRequest.effectiveTo().atOffset(zoneOffSet).toInstant().toEpochMilli();
+
         Criteria matchKey = Criteria.where("key").is(getRequest.key());
 
         //getRequest.effectiveFrom() between "effectiveMeta.effectiveFrom.dateTime" and "effectiveMeta.effectiveTo.dateTime"
-        Criteria matchEffectiveFrom = Criteria.where("effectiveMeta.effectiveFrom.dateTime").lte(getRequest.effectiveFrom());
-        Criteria matchEffectiveTo = Criteria.where("effectiveMeta.effectiveTo.dateTime").gte(getRequest.effectiveTo());
+        Criteria matchEffectiveFrom = Criteria.where("effectiveMeta.effectiveFrom.epochMilli").lte(newFrom);
+        Criteria matchEffectiveTo = Criteria.where("effectiveMeta.effectiveTo.epochMilli").gte(newTo);
         Criteria matchEffective = new Criteria().andOperator(matchEffectiveFrom, matchEffectiveTo);
 
         Criteria matchCriteria = new Criteria().andOperator(matchKey, matchEffective);
@@ -413,6 +416,7 @@ public class BiTempService {
     public List<BiTempObject> getRelatedBiTempData(GetRequest getRequest) {
         log.debug("Get Related BiTemp Data: {}", getRequest);
 
+        //TODO: Simplify this
         EffectiveMeta effectiveMetaQuery = new EffectiveMeta(
                 getRequest.effectiveFrom().atOffset(zoneOffSet),
                 getRequest.effectiveTo().atOffset(zoneOffSet));
