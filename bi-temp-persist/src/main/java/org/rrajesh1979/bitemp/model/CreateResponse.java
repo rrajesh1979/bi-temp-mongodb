@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record CreateResponse(
-        List<String> insertResult,
-        List<String> updateResult) {
+        List<Object> insertResult,
+        List<Object> updateResult) {
 
 }

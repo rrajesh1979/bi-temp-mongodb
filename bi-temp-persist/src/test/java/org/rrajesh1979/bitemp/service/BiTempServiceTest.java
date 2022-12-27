@@ -11,10 +11,7 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.*;
 import org.rrajesh1979.bitemp.config.MongoConfig;
-import org.rrajesh1979.bitemp.model.BiTempObject;
-import org.rrajesh1979.bitemp.model.CreateRequest;
-import org.rrajesh1979.bitemp.model.DeleteRequest;
-import org.rrajesh1979.bitemp.model.GetRequest;
+import org.rrajesh1979.bitemp.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.core.env.Environment;
@@ -205,7 +202,7 @@ class BiTempServiceTest {
 
         log.info("Related BiTempObjects: {}", relatedBiTempObjects);
         assertEquals(2, relatedBiTempObjects.size());
-        String newId = biTempService.createBiTempData(newCreateRequest);
+        CreateResponse result = biTempService.createBiTempData(newCreateRequest);
         assertEquals(13, collection.countDocuments());
 
         //Verify updates to related objects
@@ -265,7 +262,7 @@ class BiTempServiceTest {
 
         //Act
         //Create new data
-        String newId = biTempService.createBiTempData(newCreateRequest);
+        CreateResponse result = biTempService.createBiTempData(newCreateRequest);
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
@@ -299,7 +296,7 @@ class BiTempServiceTest {
 
         //Act
         //Create new data
-        String newId = biTempService.createBiTempData(newCreateRequest);
+        CreateResponse result = biTempService.createBiTempData(newCreateRequest);
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
@@ -334,7 +331,7 @@ void testScenario1_3() throws IOException {
 
         //Act
         //Create new data
-        String updateResult = biTempService.createBiTempData(newCreateRequest);
+        CreateResponse result = biTempService.createBiTempData(newCreateRequest);
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
@@ -370,7 +367,7 @@ void testScenario1_3() throws IOException {
 
         //Act
         //Create new data
-        String updateResult = biTempService.createBiTempData(newCreateRequest);
+        CreateResponse result = biTempService.createBiTempData(newCreateRequest);
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
@@ -405,7 +402,7 @@ void testScenario1_3() throws IOException {
 
         //Act
         //Create new data
-        String updateResult = biTempService.createBiTempData(newCreateRequest);
+        CreateResponse result = biTempService.createBiTempData(newCreateRequest);
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
@@ -440,7 +437,7 @@ void testScenario1_3() throws IOException {
 
         //Act
         //Create new data
-        String updateResult = biTempService.createBiTempData(newCreateRequest);
+        CreateResponse result = biTempService.createBiTempData(newCreateRequest);
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
@@ -473,7 +470,7 @@ void testScenario1_3() throws IOException {
 
         //Act
         //Create new data
-        String updateResult = biTempService.createBiTempData(newCreateRequest);
+        CreateResponse result = biTempService.createBiTempData(newCreateRequest);
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
@@ -506,7 +503,7 @@ void testScenario1_3() throws IOException {
 
         //Act
         //Create new data
-        String updateResult = biTempService.createBiTempData(newCreateRequest);
+        CreateResponse result = biTempService.createBiTempData(newCreateRequest);
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
@@ -542,7 +539,7 @@ void testScenario1_3() throws IOException {
 
         //Act
         //Create new data
-        String updateResult = biTempService.createBiTempData(newCreateRequest);
+        CreateResponse result = biTempService.createBiTempData(newCreateRequest);
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
@@ -583,7 +580,7 @@ void testScenario1_3() throws IOException {
 
         //Act
         //Create new data
-        String updateResult = biTempService.deleteBiTempData(newDeleteRequest);
+        CreateResponse result = biTempService.deleteBiTempData(newDeleteRequest);
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert

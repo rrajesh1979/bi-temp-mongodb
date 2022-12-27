@@ -37,7 +37,7 @@ public class BiTempService {
         this.mongoCollection = mongoCollection;
     }
 
-    public String createBiTempData(CreateRequest createRequest) {
+    public CreateResponse createBiTempData(CreateRequest createRequest) {
         log.debug("Create BiTemp Data: {}", createRequest);
 
         //Get related BiTempData
@@ -74,9 +74,9 @@ public class BiTempService {
                 log.info("Update Result: {}", updateResult);
                 CreateResponse createResponse = new CreateResponse(
                         List.of(),
-                        List.of(updateResult.toString())
+                        List.of(updateResult)
                 );
-                return createResponse.toString();
+                return createResponse;
 
             } else if (newFrom > existingFrom && newTo == existingTo ) {
                 // Scenario 1.2: New From is after existing From and New To is equal to existing To
@@ -95,10 +95,10 @@ public class BiTempService {
 
                 CreateResponse createResponse = new CreateResponse(
                         List.of(insertResult),
-                        List.of(updateResult.toString())
+                        List.of(updateResult)
                 );
 
-                return createResponse.toString();
+                return createResponse;
 
             } else if (newFrom < existingFrom && newTo == existingTo) {
                 //Scenario 1.3: New From is before existing From and New To is equal to existing To
@@ -119,10 +119,10 @@ public class BiTempService {
 
                 CreateResponse createResponse = new CreateResponse(
                         List.of(),
-                        List.of(updateResult.toString())
+                        List.of(updateResult)
                 );
 
-                return createResponse.toString();
+                return createResponse;
 
             } else if (newFrom == existingFrom && newTo < existingTo) {
                 //Scenario 1.4: New From is equal to existing From and New To is before existing To
@@ -144,10 +144,10 @@ public class BiTempService {
 
                 CreateResponse createResponse = new CreateResponse(
                         List.of(insertResult),
-                        List.of(updateResult.toString())
+                        List.of(updateResult)
                 );
 
-                return createResponse.toString();
+                return createResponse;
 
             } else if (newFrom == existingFrom && newTo > existingTo) {
                 //Scenario 1.5: New From is equal to existing From and New To is after existing To
@@ -171,7 +171,7 @@ public class BiTempService {
                         List.of()
                 );
 
-                return createResponse.toString();
+                return createResponse;
 
             } else if (newFrom > existingFrom && newTo < existingTo) {
                 //Scenario 1.6: New From is after existing From and New To is before existing To
@@ -202,10 +202,10 @@ public class BiTempService {
 
                 CreateResponse createResponse = new CreateResponse(
                         List.of(insertResult, insertResultB),
-                        List.of(updateResultA.toString())
+                        List.of(updateResultA)
                 );
 
-                return createResponse.toString();
+                return createResponse;
 
             } else if (newFrom < existingFrom && newTo > existingTo) {
                 //Scenario 1.7: New From is before existing From and New To is after existing To
@@ -240,6 +240,8 @@ public class BiTempService {
                         List.of()
                 );
 
+                return createResponse;
+
             } else if (newFrom > existingFrom && newTo > existingTo) {
                 //Scenario 1.8: New From is after existing From and New To is after existing To
                 // Ex: New[2022-12-26, 2023-01-01] = Existing[2022-12-25, 2022-12-31]
@@ -259,10 +261,10 @@ public class BiTempService {
 
                 CreateResponse createResponse = new CreateResponse(
                         List.of(insertResult),
-                        List.of(updateResult.toString())
+                        List.of(updateResult)
                 );
 
-                return createResponse.toString();
+                return createResponse;
 
             } else if (newFrom < existingFrom && newTo < existingTo) {
                 //Scenario 1.9: New From is before existing From and New To is before existing To
@@ -284,13 +286,11 @@ public class BiTempService {
 
                 CreateResponse createResponse = new CreateResponse(
                         List.of(insertResult),
-                        List.of(updateResult.toString())
+                        List.of(updateResult)
                 );
 
-                return createResponse.toString();
+                return createResponse;
             }
-
-            return "Did not match any scenario";
 
         } else if (relatedBiTempData.size() == 2) {
             //Scenario 2: Two Matching Records
@@ -328,14 +328,17 @@ public class BiTempService {
 
             CreateResponse createResponse = new CreateResponse(
                     List.of(insertResult),
-                    List.of(updateResultA.toString(), updateResultB.toString())
+                    List.of(updateResultA, updateResultB)
             );
 
-            return createResponse.toString();
+            return createResponse;
 
         } else if (relatedBiTempData.size() > 2) {
             //Scenario Invalid: More than Two Matching Records. Avoid getting into this scenario
-            return "Invalid scenario";
+            return new CreateResponse(
+                    List.of(),
+                    List.of()
+            );
         } else {
             //Scenario 3: No Matching Records
             // Ex: New[2022-12-26, 2022-01-01] = Existing[2022-12-25, 2022-12-30] & Existing[2022-12-31, 2023-01-05]
@@ -350,9 +353,13 @@ public class BiTempService {
                     List.of(insertResult),
                     List.of()
             );
-
-            return createResponse.toString();
+            return createResponse;
         }
+
+        return new CreateResponse(
+                List.of(),
+                List.of()
+        );
     }
 
     public String insertBiTempData(CreateRequest createRequest) {
@@ -475,7 +482,7 @@ public class BiTempService {
         return biTempObject;
     }
 
-    public String deleteBiTempData(DeleteRequest deleteRequest) {
+    public CreateResponse deleteBiTempData(DeleteRequest deleteRequest) {
         log.debug("Delete BiTemp Data: {}", deleteRequest);
 
         GetRequest getRequest = new GetRequest(
@@ -493,12 +500,12 @@ public class BiTempService {
             BiTempObject biTempObject = biTempObjects.get(0);
             return markRecordAsInactive(biTempObject._id(), deleteRequest.deletedBy());
         } else {
-            return "Invalid request";
+            return new CreateResponse(List.of(), List.of());
         }
     }
 
     //Marking the record as inactive. Input is the ObjectId of the record
-    public String markRecordAsInactive(ObjectId id, String deletedBy) {
+    public CreateResponse markRecordAsInactive(ObjectId id, String deletedBy) {
         log.debug("Marking record as inactive: {}", id);
 
         Query query = new Query();
@@ -516,10 +523,10 @@ public class BiTempService {
 
         CreateResponse createResponse = new CreateResponse(
                 List.of(),
-                List.of(updateResult.toString())
+                List.of(updateResult)
         );
 
-        return createResponse.toString();
+        return createResponse;
     }
 
     //Convert FromEpochMilli, ToEpochMilli to EffectiveMeta

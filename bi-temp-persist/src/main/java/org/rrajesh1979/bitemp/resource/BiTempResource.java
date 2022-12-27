@@ -1,5 +1,6 @@
 package org.rrajesh1979.bitemp.resource;
 
+import com.google.gson.Gson;
 import lombok.extern.log4j.Log4j2;
 import org.bson.Document;
 import org.rrajesh1979.bitemp.model.*;
@@ -30,7 +31,7 @@ public class BiTempResource {
     public ResponseEntity<Map<String, Object>> createBiTempData(@RequestBody CreateRequest createRequest) {
         log.debug("Create BiTemp Data: {}", createRequest);
 
-        String result = biTempService.createBiTempData(createRequest);
+        CreateResponse result = biTempService.createBiTempData(createRequest);
 
         Map<String, Object> response = new HashMap<>();
         response.put("result", result);
@@ -58,7 +59,7 @@ public class BiTempResource {
     public ResponseEntity<Map<String, Object>> deleteBiTempData(@RequestBody DeleteRequest deleteRequest) {
         log.debug("Delete BiTemp Request: {}", deleteRequest);
 
-        String result = biTempService.deleteBiTempData(deleteRequest);
+        CreateResponse result = biTempService.deleteBiTempData(deleteRequest);
 
         Map<String, Object> response = new HashMap<>();
         response.put("result", result);
