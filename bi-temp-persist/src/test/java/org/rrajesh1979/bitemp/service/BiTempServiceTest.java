@@ -162,7 +162,7 @@ class BiTempServiceTest {
 
     @Test
     @Order(1)
-    void createBiTempData() throws IOException {
+    void createBiTempData() {
         assertNotNull(collection);
 
         //Verify data in collection
