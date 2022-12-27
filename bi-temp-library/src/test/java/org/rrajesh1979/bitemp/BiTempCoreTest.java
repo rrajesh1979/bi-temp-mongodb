@@ -25,9 +25,9 @@ public class BiTempCoreTest {
 
     @Test
     public void testBiTempModel() {
-//        OffsetDateTime validFrom = OffsetDateTime.of(LocalDateTime.of(2021, 1, 1, 0, 0, 0), ZoneOffset.UTC);
-//        OffsetDateTime validTo = OffsetDateTime.of(LocalDateTime.MAX, ZoneOffset.UTC);
-//        EffectiveMeta effectiveMeta = new EffectiveMeta(validFrom, validTo);
+//        OffsetDateTime effectiveFrom = OffsetDateTime.of(LocalDateTime.of(2021, 1, 1, 0, 0, 0), ZoneOffset.UTC);
+//        OffsetDateTime effectiveTo = OffsetDateTime.of(LocalDateTime.MAX, ZoneOffset.UTC);
+//        EffectiveMeta effectiveMeta = new EffectiveMeta(effectiveFrom, effectiveTo);
 //        log.debug("LocalDateTime.MAX: {}", LocalDateTime.MAX);
 //        log.debug("Effective Meta: {}", effectiveMeta);
 //

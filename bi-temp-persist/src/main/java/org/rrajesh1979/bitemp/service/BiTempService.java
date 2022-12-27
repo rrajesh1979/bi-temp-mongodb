@@ -55,8 +55,8 @@ public class BiTempService {
             long newFrom = createRequest.effectiveFrom().atOffset(zoneOffSet).toInstant().toEpochMilli();
             long newTo = createRequest.effectiveTo().atOffset(zoneOffSet).toInstant().toEpochMilli();
 
-            long existingFrom = relatedBiTempData.get(0).effectiveMeta().validFrom().toInstant().toEpochMilli();
-            long existingTo = relatedBiTempData.get(0).effectiveMeta().validTo().toInstant().toEpochMilli();
+            long existingFrom = relatedBiTempData.get(0).effectiveMeta().effectiveFrom().toInstant().toEpochMilli();
+            long existingTo = relatedBiTempData.get(0).effectiveMeta().effectiveTo().toInstant().toEpochMilli();
 
             Object existingData = relatedBiTempData.get(0).data();
             ObjectId existingId = relatedBiTempData.get(0)._id();
@@ -82,7 +82,7 @@ public class BiTempService {
                 // Scenario 1.2: New From is after existing From and New To is equal to existing To
                 // Ex: New[2022-12-26, 2022-12-31] = Existing[2022-12-25, 2022-12-31]
                 // Result: Existing[2022-12-25, 2022-12-26 - 1 second] and New[2022-12-26, 2022-12-31]
-                // Update the existing record's validTo to new record's effectiveFrom - 1 second and insert new record
+                // Update the existing record's effectiveTo to new record's effectiveFrom - 1 second and insert new record
                 log.info("Scenario 1.2: New From is after existing From and New To is equal to existing To");
                 UpdateResult updateResult = mongoCollection.updateOne(
                         new Document("_id", existingId),
@@ -104,7 +104,7 @@ public class BiTempService {
                 //Scenario 1.3: New From is before existing From and New To is equal to existing To
                 // Ex: New[2022-12-24, 2022-12-31] = Existing[2022-12-25, 2022-12-31]
                 // Result: Existing[2022-12-24, 2022-12-31]
-                // Update the existing record's validFrom to new record's effectiveFrom.
+                // Update the existing record's effectiveFrom to new record's effectiveFrom.
                 // Update the existing record's data. No need to insert new record
 
                 log.info("Scenario 1.3: New From is before existing From and New To is equal to existing To");
@@ -128,7 +128,7 @@ public class BiTempService {
                 //Scenario 1.4: New From is equal to existing From and New To is before existing To
                 // Ex: New[2022-12-25, 2022-12-30] = Existing[2022-12-25, 2022-12-31]
                 // Result: Existing[2022-12-30 + 1 second, 2022-12-31] and New[2022-12-25, 2022-12-30]
-                // Update the existing record's validFrom to new record's effectiveTo + 1 second and insert new record
+                // Update the existing record's effectiveFrom to new record's effectiveTo + 1 second and insert new record
 
                 log.info("Scenario 1.4: New From is equal to existing From and New To is before existing To");
                 UpdateResult updateResult = mongoCollection.updateOne(
@@ -153,7 +153,7 @@ public class BiTempService {
                 //Scenario 1.5: New From is equal to existing From and New To is after existing To
                 // Ex: New[2022-12-25, 2023-01-01] D1 = Existing[2022-12-25, 2022-12-31] D2
                 // Result: Existing[2022-12-25, 2022-12-31] D2 and New[2022-12-31 + 1 second, 2023-01-01] D1
-                // Update the new record's validFrom to existing record's effectiveTo + 1 second and insert new record
+                // Update the new record's effectiveFrom to existing record's effectiveTo + 1 second and insert new record
 
                 log.info("Scenario 1.5: New From is equal to existing From and New To is after existing To");
                 CreateRequest newCreateRequest = new CreateRequest(
@@ -177,8 +177,8 @@ public class BiTempService {
                 //Scenario 1.6: New From is after existing From and New To is before existing To
                 // Ex: New[2022-12-26, 2022-12-30] D1 = Existing[2022-12-25, 2022-12-31] D2
                 // Result: ExistingSplitA[2022-12-25, 2022-12-26 - 1 second] D2, New[2022-12-26, 2022-12-30] D1, ExistingSplitB[2022-12-30 + 1 second, 2022-12-31] D2
-                // Update the existing record's validTo to new record's effectiveFrom - 1 second and insert new record
-                // Insert new record with validFrom = new record's effectiveTo + 1 second and validTo = existing record's effectiveTo
+                // Update the existing record's effectiveTo to new record's effectiveFrom - 1 second and insert new record
+                // Insert new record with effectiveFrom = new record's effectiveTo + 1 second and effectiveTo = existing record's effectiveTo
 
                 log.info("Scenario 1.6: New From is after existing From and New To is before existing To");
                 UpdateResult updateResultA = mongoCollection.updateOne(
@@ -211,8 +211,8 @@ public class BiTempService {
                 //Scenario 1.7: New From is before existing From and New To is after existing To
                 // Ex: New[2022-12-24, 2023-01-01] = Existing[2022-12-25, 2022-12-31]
                 // Result: NewSplitA[2022-12-24, 2022-12-25 - 1 second], Existing[2022-12-25, 2022-12-31], NewSplitB[2022-12-31 + 1 second, 2023-01-01]
-                // Update the new record's validTo to existing record's effectiveFrom - 1 second and insert new record
-                // Insert new record with validFrom = existing record's effectiveTo + 1 second and validTo = new record's effectiveTo
+                // Update the new record's effectiveTo to existing record's effectiveFrom - 1 second and insert new record
+                // Insert new record with effectiveFrom = existing record's effectiveTo + 1 second and effectiveTo = new record's effectiveTo
 
                 log.info("Scenario 1.7: New From is before existing From and New To is after existing To");
                 CreateRequest newCreateRequestA = new CreateRequest(
@@ -244,7 +244,7 @@ public class BiTempService {
                 //Scenario 1.8: New From is after existing From and New To is after existing To
                 // Ex: New[2022-12-26, 2023-01-01] = Existing[2022-12-25, 2022-12-31]
                 // Result: Existing[2022-12-25, 2022-12-26 - 1 second], New[2022-12-26, 2023-01-01]
-                // Update the existing record's validTo to new record's effectiveFrom - 1 second and insert new record
+                // Update the existing record's effectiveTo to new record's effectiveFrom - 1 second and insert new record
 
                 log.info("Scenario 1.8: New From is after existing From and New To is after existing To");
 
@@ -268,7 +268,7 @@ public class BiTempService {
                 //Scenario 1.9: New From is before existing From and New To is before existing To
                 // Ex: New[2022-12-24, 2022-12-30] = Existing[2022-12-25, 2022-12-31]
                 // Result: New[2022-12-24, 2022-12-30], Existing[2022-12-30 + 1 second, 2022-12-31]
-                // Update the new record's validTo to existing record's effectiveFrom - 1 second and insert new record
+                // Update the new record's effectiveTo to existing record's effectiveFrom - 1 second and insert new record
 
                 log.info("Scenario 1.9: New From is before existing From and New To is before existing To");
 
@@ -296,20 +296,20 @@ public class BiTempService {
             //Scenario 2: Two Matching Records
             // Ex: New[2022-12-26, 2022-01-01] = Existing[2022-12-25, 2022-12-30] & Existing[2022-12-31, 2023-01-05]
             // Result: Existing[2022-12-25, 2022-12-26 - 1 second], New[2022-12-26, 2023-01-01], Existing[2023-01-01 + 1 second, 2023-01-05]
-            // Update the existing record's validTo to new record's effectiveFrom - 1 second and insert new record
-            // Insert new record with validFrom = new record's effectiveTo + 1 second and validTo = existing record's effectiveTo
+            // Update the existing record's effectiveTo to new record's effectiveFrom - 1 second and insert new record
+            // Insert new record with effectiveFrom = new record's effectiveTo + 1 second and effectiveTo = existing record's effectiveTo
 
             log.info("Scenario 2: Two Matching Records");
 
             long newFrom = createRequest.effectiveFrom().atOffset(zoneOffSet).toInstant().toEpochMilli();
             long newTo = createRequest.effectiveTo().atOffset(zoneOffSet).toInstant().toEpochMilli();
 
-            long existingFromA = relatedBiTempData.get(0).effectiveMeta().validFrom().toInstant().toEpochMilli();
+            long existingFromA = relatedBiTempData.get(0).effectiveMeta().effectiveFrom().toInstant().toEpochMilli();
             long existingToA = newFrom - 1000;
             ObjectId existingIdA = relatedBiTempData.get(0)._id();
 
             long existingFromB = newTo + 1000;
-            long existingToB = relatedBiTempData.get(1).effectiveMeta().validTo().toInstant().toEpochMilli();
+            long existingToB = relatedBiTempData.get(1).effectiveMeta().effectiveTo().toInstant().toEpochMilli();
             ObjectId existingIdB = relatedBiTempData.get(1)._id();
 
             UpdateResult updateResultA = mongoCollection.updateOne(
@@ -340,7 +340,7 @@ public class BiTempService {
             //Scenario 3: No Matching Records
             // Ex: New[2022-12-26, 2022-01-01] = Existing[2022-12-25, 2022-12-30] & Existing[2022-12-31, 2023-01-05]
             // Result: Existing[2022-12-25, 2022-12-30], New[2022-12-26, 2023-01-01], Existing[2023-01-01 + 1 second, 2023-01-05]
-            // Insert new record with validFrom = new record's effectiveTo + 1 second and validTo = existing record's effectiveTo
+            // Insert new record with effectiveFrom = new record's effectiveTo + 1 second and effectiveTo = existing record's effectiveTo
 
             log.info("Scenario 3: No Matching Records");
 
@@ -375,17 +375,17 @@ public class BiTempService {
     public List<Document> getBiTempData(GetRequest getRequest) {
         log.debug("Get BiTemp Data: {}", getRequest);
 
-        Criteria matchKey = Criteria.where("key").is(getRequest.id());
+        Criteria matchKey = Criteria.where("key").is(getRequest.key());
 
-        //getRequest.effectiveFrom() between "effectiveMeta.validFrom.dateTime" and "effectiveMeta.validTo.dateTime"
-        Criteria matchEffectiveFrom = Criteria.where("effectiveMeta.validFrom.dateTime").lte(getRequest.effectiveFrom());
-        Criteria matchEffectiveTo = Criteria.where("effectiveMeta.validTo.dateTime").gte(getRequest.effectiveTo());
+        //getRequest.effectiveFrom() between "effectiveMeta.effectiveFrom.dateTime" and "effectiveMeta.effectiveTo.dateTime"
+        Criteria matchEffectiveFrom = Criteria.where("effectiveMeta.effectiveFrom.dateTime").lte(getRequest.effectiveFrom());
+        Criteria matchEffectiveTo = Criteria.where("effectiveMeta.effectiveTo.dateTime").gte(getRequest.effectiveTo());
         Criteria matchEffective = new Criteria().andOperator(matchEffectiveFrom, matchEffectiveTo);
 
         Criteria matchCriteria = new Criteria().andOperator(matchKey, matchEffective);
 
         final MatchOperation matchStage = Aggregation.match(matchCriteria);
-        final SortOperation sortStage = Aggregation.sort(Sort.Direction.DESC, "effectiveMeta.validFrom.dateTime");
+        final SortOperation sortStage = Aggregation.sort(Sort.Direction.DESC, "effectiveMeta.effectiveFrom.dateTime");
 
         final Aggregation aggregation = Aggregation.newAggregation(matchStage, sortStage);
 
@@ -417,21 +417,21 @@ public class BiTempService {
                 getRequest.effectiveFrom().atOffset(zoneOffSet),
                 getRequest.effectiveTo().atOffset(zoneOffSet));
 
-        Long newFrom = effectiveMetaQuery.validFrom().toInstant().toEpochMilli();
-        Long newTo = effectiveMetaQuery.validTo().toInstant().toEpochMilli();
+        Long newFrom = effectiveMetaQuery.effectiveFrom().toInstant().toEpochMilli();
+        Long newTo = effectiveMetaQuery.effectiveTo().toInstant().toEpochMilli();
 
-        Criteria matchKey = Criteria.where("key").is(getRequest.id());
+        Criteria matchKey = Criteria.where("key").is(getRequest.key());
 
-        Criteria matchEffectiveFromS = Criteria.where("effectiveMeta.validFrom.epochMilli").lte(newFrom);
-        Criteria matchEffectiveFromE = Criteria.where("effectiveMeta.validTo.epochMilli").gte(newFrom);
+        Criteria matchEffectiveFromS = Criteria.where("effectiveMeta.effectiveFrom.epochMilli").lte(newFrom);
+        Criteria matchEffectiveFromE = Criteria.where("effectiveMeta.effectiveTo.epochMilli").gte(newFrom);
         Criteria matchEffectiveFrom = new Criteria().andOperator(matchEffectiveFromS, matchEffectiveFromE);
 
-        Criteria matchEffectiveToS = Criteria.where("effectiveMeta.validFrom.epochMilli").lte(newTo);
-        Criteria matchEffectiveToE = Criteria.where("effectiveMeta.validTo.epochMilli").gte(newTo);
+        Criteria matchEffectiveToS = Criteria.where("effectiveMeta.effectiveFrom.epochMilli").lte(newTo);
+        Criteria matchEffectiveToE = Criteria.where("effectiveMeta.effectiveTo.epochMilli").gte(newTo);
         Criteria matchEffectiveTo = new Criteria().andOperator(matchEffectiveToS, matchEffectiveToE);
 
-        Criteria matchEffectiveFromBoundary = Criteria.where("effectiveMeta.validFrom.epochMilli").gt(newFrom);
-        Criteria matchEffectiveToBoundary = Criteria.where("effectiveMeta.validTo.epochMilli").lt(newTo);
+        Criteria matchEffectiveFromBoundary = Criteria.where("effectiveMeta.effectiveFrom.epochMilli").gt(newFrom);
+        Criteria matchEffectiveToBoundary = Criteria.where("effectiveMeta.effectiveTo.epochMilli").lt(newTo);
         Criteria matchEffectiveBoundary = new Criteria().andOperator(matchEffectiveFromBoundary, matchEffectiveToBoundary);
 
         Criteria matchEffective = new Criteria().orOperator(matchEffectiveFrom, matchEffectiveTo, matchEffectiveBoundary);
@@ -441,7 +441,7 @@ public class BiTempService {
         Criteria matchCriteria = new Criteria().andOperator(matchKey, matchEffective, matchActive);
 
         final MatchOperation matchStage = Aggregation.match(matchCriteria);
-        final SortOperation sortStage = Aggregation.sort(Sort.Direction.ASC, "effectiveMeta.validFrom.epochMilli");
+        final SortOperation sortStage = Aggregation.sort(Sort.Direction.ASC, "effectiveMeta.effectiveFrom.epochMilli");
 
         final Aggregation aggregation = Aggregation.newAggregation(matchStage, sortStage);
 

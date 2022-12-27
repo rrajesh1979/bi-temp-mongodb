@@ -74,7 +74,6 @@ class BiTempServiceTest {
     @Autowired
     Environment env;
 
-    private MongoConfig mongoConfig;
     private MongoCollection<Document> collection;
 
     private BiTempService biTempService;
@@ -96,7 +95,7 @@ class BiTempServiceTest {
     void setUpEach() throws IOException {
         assert mongoTemplate != null;
         log.info("MongoTemplate created");
-        mongoConfig = new MongoConfig(env);
+        MongoConfig mongoConfig = new MongoConfig(env);
         assertNotNull(mongoConfig);
         log.info("MongoConfig configured");
         collection = mongoConfig.getCollection();
@@ -116,10 +115,10 @@ class BiTempServiceTest {
     private void createIndexAndVerify() {
         Document indexPattern = new Document();
         indexPattern.put("key", 1);
-        indexPattern.put("effectiveMeta.validFrom.epochMilli", 1);
-        indexPattern.put("effectiveMeta.validTo.epochMilli", 1);
+        indexPattern.put("effectiveMeta.effectiveFrom.epochMilli", 1);
+        indexPattern.put("effectiveMeta.effectiveTo.epochMilli", 1);
         IndexOptions indexOptions = new IndexOptions();
-        indexOptions.name("key_validFrom_validTo");
+        indexOptions.name("key_effectiveFrom_effectiveTo");
         collection.createIndex(indexPattern, indexOptions);
         List<Document> indexes = new ArrayList<>();
         collection.listIndexes().iterator().forEachRemaining(indexes::add);
@@ -128,7 +127,7 @@ class BiTempServiceTest {
                 indexes
                     .stream()
                     .anyMatch(
-                            index -> index.getString("name").equals("key_validFrom_validTo")
+                            index -> index.getString("name").equals("key_effectiveFrom_effectiveTo")
                     )
         );
         log.info("Index created");
@@ -217,7 +216,7 @@ class BiTempServiceTest {
 
         assert updatedBiTempObjectA
                 .effectiveMeta()
-                    .validTo()
+                    .effectiveTo()
                     .toInstant()
                     .toEpochMilli()
                 ==
@@ -229,7 +228,7 @@ class BiTempServiceTest {
 
         assert updatedBiTempObjectB
                 .effectiveMeta()
-                    .validFrom()
+                    .effectiveFrom()
                     .toInstant()
                     .toEpochMilli()
                 ==
@@ -308,7 +307,7 @@ class BiTempServiceTest {
 
         assert relatedBiTempObjects.size() == 1;
         assertEquals(countBefore + 1, countAfter);
-        assertEquals(updatedBiTempObject.effectiveMeta().validTo().toInstant().toEpochMilli(),
+        assertEquals(updatedBiTempObject.effectiveMeta().effectiveTo().toInstant().toEpochMilli(),
                 newCreateRequest.effectiveFrom().toInstant(zoneOffSet).toEpochMilli() - 1000);
     }
 
@@ -343,7 +342,7 @@ void testScenario1_3() throws IOException {
 
         assert relatedBiTempObjects.size() == 1;
         assertEquals(countBefore, countAfter);
-        assertEquals(updatedBiTempObject.effectiveMeta().validFrom().toInstant().toEpochMilli(),
+        assertEquals(updatedBiTempObject.effectiveMeta().effectiveFrom().toInstant().toEpochMilli(),
                 newCreateRequest.effectiveFrom().toInstant(zoneOffSet).toEpochMilli());
         assertEquals(updatedBiTempObject.data(), newCreateRequest.data());
     }
@@ -379,7 +378,7 @@ void testScenario1_3() throws IOException {
 
         assert relatedBiTempObjects.size() == 1;
         assertEquals(countBefore + 1, countAfter);
-        assertEquals(updatedBiTempObject.effectiveMeta().validFrom().toInstant().toEpochMilli(),
+        assertEquals(updatedBiTempObject.effectiveMeta().effectiveFrom().toInstant().toEpochMilli(),
                 newCreateRequest.effectiveTo().toInstant(zoneOffSet).toEpochMilli() + 1000);
     }
 
@@ -516,7 +515,7 @@ void testScenario1_3() throws IOException {
         assert relatedBiTempObjects.size() == 1;
         assertEquals(countBefore + 1, countAfter);
 
-        assertEquals(updatedBiTempObject.effectiveMeta().validTo().toInstant().toEpochMilli(),
+        assertEquals(updatedBiTempObject.effectiveMeta().effectiveTo().toInstant().toEpochMilli(),
                 newCreateRequest.effectiveFrom().toInstant(zoneOffSet).toEpochMilli() - 1000);
     }
 
@@ -552,7 +551,7 @@ void testScenario1_3() throws IOException {
         assert relatedBiTempObjects.size() == 1;
         assertEquals(countBefore + 1, countAfter);
 
-        assertEquals(updatedBiTempObject.effectiveMeta().validFrom().toInstant().toEpochMilli(),
+        assertEquals(updatedBiTempObject.effectiveMeta().effectiveFrom().toInstant().toEpochMilli(),
                 newCreateRequest.effectiveTo().toInstant(zoneOffSet).toEpochMilli() + 1000);
     }
 
