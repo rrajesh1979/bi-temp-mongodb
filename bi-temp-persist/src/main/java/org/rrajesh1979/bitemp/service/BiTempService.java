@@ -66,11 +66,7 @@ public class BiTempService {
                 // Ex: New[2022-12-25, 2022-12-31] = Existing[2022-12-25, 2022-12-31]
                 // Update the existing record
                 log.info("Scenario 1.1: Exact Match. [NewFrom, NewTo] = [ExistingFrom, ExistingTo]");
-                UpdateResult updateResult = mongoCollection.updateOne(
-                        new Document("_id", existingId),
-                        new Document("$set", new Document("data", createRequest.data()))
-                        //TODO: Update UpdatedBy and UpdatedOn
-                );
+                UpdateResult updateResult = updateBiTempData(existingId, createRequest.createdBy(), createRequest.data(), null);
                 log.info("Update Result: {}", updateResult);
                 CreateResponse createResponse = new CreateResponse(
                         List.of(),
@@ -84,11 +80,8 @@ public class BiTempService {
                 // Result: Existing[2022-12-25, 2022-12-26 - 1 second] and New[2022-12-26, 2022-12-31]
                 // Update the existing record's effectiveTo to new record's effectiveFrom - 1 second and insert new record
                 log.info("Scenario 1.2: New From is after existing From and New To is equal to existing To");
-                UpdateResult updateResult = mongoCollection.updateOne(
-                        new Document("_id", existingId),
-                        new Document("$set", new Document("effectiveMeta", convertEpochMilliToEffectiveMeta(existingFrom, newFrom - 1000)))
-                        //TODO: Update UpdatedBy and UpdatedOn
-                );
+                UpdateResult updateResult = updateBiTempData(existingId, createRequest.createdBy(), null, convertEpochMilliToEffectiveMeta(existingFrom, newFrom - 1000));
+
                 log.info("Update Result: {}", updateResult);
 
                 String insertResult = insertBiTempData(createRequest);
@@ -108,12 +101,8 @@ public class BiTempService {
                 // Update the existing record's data. No need to insert new record
 
                 log.info("Scenario 1.3: New From is before existing From and New To is equal to existing To");
-                UpdateResult updateResult = mongoCollection.updateOne(
-                        new Document("_id", existingId),
-                        new Document("$set",
-                                new Document("effectiveMeta", convertEpochMilliToEffectiveMeta(newFrom, existingTo))
-                                .append("data", createRequest.data()))
-                );
+
+                UpdateResult updateResult = updateBiTempData(existingId, createRequest.createdBy(), createRequest.data(), convertEpochMilliToEffectiveMeta(newFrom, existingTo));
 
                 log.info("Update Result: {}", updateResult);
 
@@ -131,13 +120,14 @@ public class BiTempService {
                 // Update the existing record's effectiveFrom to new record's effectiveTo + 1 second and insert new record
 
                 log.info("Scenario 1.4: New From is equal to existing From and New To is before existing To");
-                UpdateResult updateResult = mongoCollection.updateOne(
-                        new Document("_id", existingId),
-                        new Document("$set",
-                                new Document("effectiveMeta", convertEpochMilliToEffectiveMeta(newTo + 1000, existingTo))
-                        )
-                        //TODO: Update UpdatedBy and UpdatedOn
+
+                UpdateResult updateResult = updateBiTempData(
+                        existingId,
+                        createRequest.createdBy(),
+                        null,
+                        convertEpochMilliToEffectiveMeta(newTo + 1000, existingTo)
                 );
+
                 log.info("Update Result: {}", updateResult);
 
                 String insertResult = insertBiTempData(createRequest);
@@ -181,11 +171,14 @@ public class BiTempService {
                 // Insert new record with effectiveFrom = new record's effectiveTo + 1 second and effectiveTo = existing record's effectiveTo
 
                 log.info("Scenario 1.6: New From is after existing From and New To is before existing To");
-                UpdateResult updateResultA = mongoCollection.updateOne(
-                        new Document("_id", existingId),
-                        new Document("$set", new Document("effectiveMeta", convertEpochMilliToEffectiveMeta(existingFrom, newFrom - 1000)))
-                        //TODO: Update UpdatedBy and UpdatedOn
+
+                UpdateResult updateResultA = updateBiTempData(
+                        existingId,
+                        createRequest.createdBy(),
+                        null,
+                        convertEpochMilliToEffectiveMeta(existingFrom, newFrom - 1000)
                 );
+
                 log.info("Update Result A: {}", updateResultA);
 
                 String insertResult = insertBiTempData(createRequest);
@@ -250,11 +243,13 @@ public class BiTempService {
 
                 log.info("Scenario 1.8: New From is after existing From and New To is after existing To");
 
-                UpdateResult updateResult = mongoCollection.updateOne(
-                        new Document("_id", existingId),
-                        new Document("$set", new Document("effectiveMeta", convertEpochMilliToEffectiveMeta(existingFrom, newFrom - 1000)))
-                        //TODO: Update UpdatedBy and UpdatedOn
+                UpdateResult updateResult = updateBiTempData(
+                        existingId,
+                        createRequest.createdBy(),
+                        null,
+                        convertEpochMilliToEffectiveMeta(existingFrom, newFrom - 1000)
                 );
+
                 log.info("Update Result: {}", updateResult);
 
                 String insertResult = insertBiTempData(createRequest);
@@ -276,10 +271,11 @@ public class BiTempService {
 
                 String insertResult = insertBiTempData(createRequest);
 
-                UpdateResult updateResult = mongoCollection.updateOne(
-                        new Document("_id", existingId),
-                        new Document("$set", new Document("effectiveMeta", convertEpochMilliToEffectiveMeta(newTo + 1000, existingTo)))
-                        //TODO: Update UpdatedBy and UpdatedOn
+                UpdateResult updateResult = updateBiTempData(
+                        existingId,
+                        createRequest.createdBy(),
+                        null,
+                        convertEpochMilliToEffectiveMeta(newTo + 1000, existingTo)
                 );
 
                 log.info("Update Result: {}", updateResult);
@@ -312,19 +308,21 @@ public class BiTempService {
             long existingToB = relatedBiTempData.get(1).effectiveMeta().effectiveTo().toInstant().toEpochMilli();
             ObjectId existingIdB = relatedBiTempData.get(1)._id();
 
-            UpdateResult updateResultA = mongoCollection.updateOne(
-                    new Document("_id", existingIdA),
-                    new Document("$set",
-                            new Document("effectiveMeta", convertEpochMilliToEffectiveMeta(existingFromA, existingToA))
-                    ));
+            UpdateResult updateResultA = updateBiTempData(
+                    existingIdA,
+                    createRequest.createdBy(),
+                    null,
+                    convertEpochMilliToEffectiveMeta(existingFromA, existingToA)
+            );
 
             String insertResult = insertBiTempData(createRequest);
 
-            UpdateResult updateResultB = mongoCollection.updateOne(
-                    new Document("_id", existingIdB),
-                    new Document("$set",
-                            new Document("effectiveMeta", convertEpochMilliToEffectiveMeta(existingFromB, existingToB))
-                    ));
+            UpdateResult updateResultB = updateBiTempData(
+                    existingIdB,
+                    createRequest.createdBy(),
+                    null,
+                    convertEpochMilliToEffectiveMeta(existingFromB, existingToB)
+            );
 
             CreateResponse createResponse = new CreateResponse(
                     List.of(insertResult),
@@ -362,6 +360,58 @@ public class BiTempService {
         );
     }
 
+    private UpdateResult updateBiTempData(ObjectId existingId, String updatedBy, Object data, EffectiveMeta effectiveMeta) {
+        Document updateDocument = new Document();
+        if (data != null) {
+            updateDocument.append("data", data);
+        }
+
+        if (effectiveMeta != null) {
+            updateDocument.append("effectiveMeta", effectiveMeta);
+        }
+
+        //Update the updatedBy field
+        updateDocument.append("recordMeta.updatedBy", updatedBy);
+
+        //Update the updatedAt field
+        updateDocument.append("recordMeta.updatedAt", OffsetDateTime.now(zoneOffSet));
+
+        //Create a copy and then update the original document
+        String copyResult = copyBiTempDate(existingId, updatedBy);
+
+        UpdateResult updateResult = mongoCollection.updateOne(
+                new Document("_id", existingId),
+                new Document("$set", updateDocument)
+                //TODO: Update UpdatedBy and UpdatedOn
+        );
+
+        return updateResult;
+    }
+
+    public String copyBiTempDate(ObjectId id, String updatedBy) {
+        log.info("Create a copy of the record before update!");
+        BiTempObject existingBiTempObject = getBiTempDataById(id);
+        BiTempObject newBiTempObject = new BiTempObject(
+                    existingBiTempObject.key(),
+                    existingBiTempObject.data(),
+                    existingBiTempObject.recordMeta(),
+                    existingBiTempObject.effectiveMeta(),
+                    false,
+                    null
+                );
+        //TODO: Update CreatedBy and CreatedOn
+        Document biTempDocument = BiTempUtil.toBiTempObjectToDocument(newBiTempObject);
+
+        InsertOneResult insertOneResult;
+        try {
+            insertOneResult = mongoCollection.insertOne(biTempDocument);
+            return Objects.requireNonNull(insertOneResult.getInsertedId()).toString();
+        } catch (Exception e) {
+            log.error("Error while inserting the record: {}", e.getMessage());
+            return "Error while inserting the record: " + e.getMessage();
+        }
+    }
+
     public String insertBiTempData(CreateRequest createRequest) {
         log.debug("Create BiTemp Data: {}", createRequest);
 
@@ -379,6 +429,24 @@ public class BiTempService {
         }
     }
 
+    public List<Document> getBiTempDataAsOf(GetAsOfRequest getAsOfRequest) {
+        log.debug("Get BiTemp Data As Of: {}", getAsOfRequest);
+
+        Long asOf = getAsOfRequest.asOf().atOffset(zoneOffSet).toInstant().toEpochMilli();
+        Long from = getAsOfRequest.effectiveFrom().atOffset(zoneOffSet).toInstant().toEpochMilli();
+        Long to = getAsOfRequest.effectiveTo().atOffset(zoneOffSet).toInstant().toEpochMilli();
+
+        Query query = new Query();
+        query.addCriteria(Criteria.where("key").is(getAsOfRequest.key()));
+        query.addCriteria(Criteria.where("recordMeta.updatedAt.epochMilli").lte(asOf));
+        query.addCriteria(Criteria.where("effectiveMeta.effectiveFrom.epochMilli").lte(from));
+        query.addCriteria(Criteria.where("effectiveMeta.effectiveTo.epochMilli").gte(to));
+
+        List<Document> documents = mongoCollection.find(query.getQueryObject()).into(new ArrayList<>());
+
+        return documents;
+    }
+
     public List<Document> getBiTempData(GetRequest getRequest) {
         log.debug("Get BiTemp Data: {}", getRequest);
 
@@ -390,9 +458,12 @@ public class BiTempService {
         //getRequest.effectiveFrom() between "effectiveMeta.effectiveFrom.dateTime" and "effectiveMeta.effectiveTo.dateTime"
         Criteria matchEffectiveFrom = Criteria.where("effectiveMeta.effectiveFrom.epochMilli").lte(newFrom);
         Criteria matchEffectiveTo = Criteria.where("effectiveMeta.effectiveTo.epochMilli").gte(newTo);
+
         Criteria matchEffective = new Criteria().andOperator(matchEffectiveFrom, matchEffectiveTo);
 
-        Criteria matchCriteria = new Criteria().andOperator(matchKey, matchEffective);
+        Criteria matchActive = Criteria.where("isActive").is(true);
+
+        Criteria matchCriteria = new Criteria().andOperator(matchKey, matchEffective, matchActive);
 
         final MatchOperation matchStage = Aggregation.match(matchCriteria);
         final SortOperation sortStage = Aggregation.sort(Sort.Direction.DESC, "effectiveMeta.effectiveFrom.dateTime");

@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.core.env.Environment;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -60,6 +62,8 @@ class BiTempServiceTest {
     static final String TEST_DATA_S1_8 = "/Users/rajesh/Learn/bi-temp-mongodb/bi-temp-persist/src/test/resources/data/test_data_s1_8.json";
     static final String TEST_DATA_S1_9 = "/Users/rajesh/Learn/bi-temp-mongodb/bi-temp-persist/src/test/resources/data/test_data_s1_9.json";
     static final String TEST_DATA_DELETE = "/Users/rajesh/Learn/bi-temp-mongodb/bi-temp-persist/src/test/resources/data/test_data_delete.json";
+
+    Document query = new Query().addCriteria(Criteria.where("isActive").is(true)).getQueryObject();
 
     static {
         mongoDBContainer.start();
@@ -166,7 +170,7 @@ class BiTempServiceTest {
         assertNotNull(collection);
 
         //Verify data in collection
-        assertEquals(12, collection.countDocuments());
+        assertEquals(12, collection.find(query).into(new ArrayList<>()).size());
         log.info("Data created and verified");
 
     }
@@ -203,7 +207,7 @@ class BiTempServiceTest {
         log.info("Related BiTempObjects: {}", relatedBiTempObjects);
         assertEquals(2, relatedBiTempObjects.size());
         CreateResponse result = biTempService.createBiTempData(newCreateRequest);
-        assertEquals(13, collection.countDocuments());
+        assertEquals(13, collection.find(query).into(new ArrayList<>()).size());
 
         //Verify updates to related objects
         BiTempObject updatedBiTempObjectA = biTempService.getBiTempDataById(relatedIdA);
@@ -266,7 +270,7 @@ class BiTempServiceTest {
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
-        long countAfter = collection.countDocuments();
+        long countAfter = collection.find(query).into(new ArrayList<>()).size();
 
         assert relatedBiTempObjects.size() == 1;
         assertEquals(countBefore, countAfter);
@@ -300,7 +304,7 @@ class BiTempServiceTest {
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
-        long countAfter = collection.countDocuments();
+        long countAfter = collection.find(query).into(new ArrayList<>()).size();
 
         assert relatedBiTempObjects.size() == 1;
         assertEquals(countBefore + 1, countAfter);
@@ -335,7 +339,7 @@ void testScenario1_3() throws IOException {
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
-        long countAfter = collection.countDocuments();
+        long countAfter = collection.find(query).into(new ArrayList<>()).size();
 
         assert relatedBiTempObjects.size() == 1;
         assertEquals(countBefore, countAfter);
@@ -371,7 +375,7 @@ void testScenario1_3() throws IOException {
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
-        long countAfter = collection.countDocuments();
+        long countAfter = collection.find(query).into(new ArrayList<>()).size();
 
         assert relatedBiTempObjects.size() == 1;
         assertEquals(countBefore + 1, countAfter);
@@ -406,7 +410,7 @@ void testScenario1_3() throws IOException {
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
-        long countAfter = collection.countDocuments();
+        long countAfter = collection.find(query).into(new ArrayList<>()).size();
 
         assert relatedBiTempObjects.size() == 1;
         assertEquals(countBefore + 1, countAfter);
@@ -441,7 +445,7 @@ void testScenario1_3() throws IOException {
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
-        long countAfter = collection.countDocuments();
+        long countAfter = collection.find(query).into(new ArrayList<>()).size();
 
         assert relatedBiTempObjects.size() == 1;
         assertEquals(countBefore + 2, countAfter);
@@ -474,7 +478,7 @@ void testScenario1_3() throws IOException {
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
-        long countAfter = collection.countDocuments();
+        long countAfter = collection.find(query).into(new ArrayList<>()).size();
 
         assert relatedBiTempObjects.size() == 1;
         assertEquals(countBefore + 2, countAfter);
@@ -507,7 +511,7 @@ void testScenario1_3() throws IOException {
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
-        long countAfter = collection.countDocuments();
+        long countAfter = collection.find(query).into(new ArrayList<>()).size();
 
         assert relatedBiTempObjects.size() == 1;
         assertEquals(countBefore + 1, countAfter);
@@ -543,7 +547,7 @@ void testScenario1_3() throws IOException {
         BiTempObject updatedBiTempObject = biTempService.getBiTempDataById(relatedIdA);
 
         //Assert
-        long countAfter = collection.countDocuments();
+        long countAfter = collection.find(query).into(new ArrayList<>()).size();
 
         assert relatedBiTempObjects.size() == 1;
         assertEquals(countBefore + 1, countAfter);

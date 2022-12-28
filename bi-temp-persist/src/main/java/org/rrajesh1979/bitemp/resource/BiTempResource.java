@@ -55,6 +55,20 @@ public class BiTempResource {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    @GetMapping( value = "/getAsOf", headers = ACCEPT_APPLICATION_JSON )
+    public ResponseEntity<Map<String, Object>> getBiTempDataAsOf(@RequestBody GetAsOfRequest getAsOfRequest) {
+        log.debug("Get BiTemp Request AsOf: {}", getAsOfRequest);
+
+        List<Document> result = biTempService.getBiTempDataAsOf(getAsOfRequest);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("result", result);
+        response.put("count", result.size());
+        response.put("status", "success");
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
     @DeleteMapping( value = "/delete", headers = ACCEPT_APPLICATION_JSON )
     public ResponseEntity<Map<String, Object>> deleteBiTempData(@RequestBody DeleteRequest deleteRequest) {
         log.debug("Delete BiTemp Request: {}", deleteRequest);
