@@ -89,23 +89,23 @@ class BiTempServiceTest {
     @BeforeAll
     static void setUp() {
         assert mongoDBContainer.isRunning();
-        log.info("MongoDBContainer started");
+        log.debug("MongoDBContainer started");
     }
 
     @BeforeEach
     void setUpEach() throws IOException {
         assert mongoTemplate != null;
-        log.info("MongoTemplate created");
+        log.debug("MongoTemplate created");
         MongoConfig mongoConfig = new MongoConfig(env);
         assertNotNull(mongoConfig);
-        log.info("MongoConfig configured");
+        log.debug("MongoConfig configured");
         collection = mongoConfig.getCollection();
         assertNotNull(collection);
-        log.info("MongoCollection created");
+        log.debug("MongoCollection created");
         createIndexAndVerify();
         biTempService = new BiTempService(mongoTemplate, collection);
         assertNotNull(biTempService);
-        log.info("BiTempService created");
+        log.debug("BiTempService created");
 
         //Read data from test_data_base.json
         buildTestData(baseDataCreateRequests, TEST_DATA_BASE);
@@ -131,13 +131,13 @@ class BiTempServiceTest {
                             index -> index.getString("name").equals("key_effectiveFrom_effectiveTo")
                     )
         );
-        log.info("Index created");
+        log.debug("Index created");
 
     }
 
     @AfterEach
     void tearDown() {
-        log.info("Cleaning up after test");
+        log.debug("Cleaning up after test");
         collection.drop();
     }
 
@@ -157,11 +157,11 @@ class BiTempServiceTest {
                             LocalDateTime.parse(map.get("effectiveFrom").toString()),
                             LocalDateTime.parse(map.get("effectiveTo").toString())
                     );
-//                    log.info("CreateRequest: {}", createRequest);
+//                    log.debug("CreateRequest: {}", createRequest);
                     createRequests.add(createRequest);
                 }
         );
-        log.info("Read test data from test_data_base.json");
+        log.debug("Read test data from test_data_base.json");
     }
 
     @Test
@@ -171,7 +171,7 @@ class BiTempServiceTest {
 
         //Verify data in collection
         assertEquals(12, collection.find(query).into(new ArrayList<>()).size());
-        log.info("Data created and verified");
+        log.debug("Data created and verified");
 
     }
 
@@ -204,7 +204,7 @@ class BiTempServiceTest {
         ObjectId relatedIdA = relatedBiTempObjects.get(0)._id();
         ObjectId relatedIdB = relatedBiTempObjects.get(1)._id();
 
-        log.info("Related BiTempObjects: {}", relatedBiTempObjects);
+        log.debug("Related BiTempObjects: {}", relatedBiTempObjects);
         assertEquals(2, relatedBiTempObjects.size());
         CreateResponse result = biTempService.createBiTempData(newCreateRequest);
         assertEquals(13, collection.find(query).into(new ArrayList<>()).size());
@@ -212,8 +212,8 @@ class BiTempServiceTest {
         //Verify updates to related objects
         BiTempObject updatedBiTempObjectA = biTempService.getBiTempDataById(relatedIdA);
         BiTempObject updatedBiTempObjectB = biTempService.getBiTempDataById(relatedIdB);
-        log.info("Updated BiTempObject A: {}", updatedBiTempObjectA);
-        log.info("Updated BiTempObject B: {}", updatedBiTempObjectB);
+        log.debug("Updated BiTempObject A: {}", updatedBiTempObjectA);
+        log.debug("Updated BiTempObject B: {}", updatedBiTempObjectB);
 
         assert updatedBiTempObjectA
                 .effectiveMeta()

@@ -48,7 +48,7 @@ public class BiTempService {
                         createRequest.effectiveTo()
                 )
         );
-        log.info("Related BiTemp Data: {}", relatedBiTempData);
+        log.debug("Related BiTemp Data: {}", relatedBiTempData);
 
         if (relatedBiTempData.size() == 1) {
             //Scenario 1: One Matching Record
@@ -65,9 +65,9 @@ public class BiTempService {
                 // Scenario 1.1: Exact Match. [NewFrom, NewTo] = [ExistingFrom, ExistingTo]
                 // Ex: New[2022-12-25, 2022-12-31] = Existing[2022-12-25, 2022-12-31]
                 // Update the existing record
-                log.info("Scenario 1.1: Exact Match. [NewFrom, NewTo] = [ExistingFrom, ExistingTo]");
+                log.debug("Scenario 1.1: Exact Match. [NewFrom, NewTo] = [ExistingFrom, ExistingTo]");
                 UpdateResult updateResult = updateBiTempData(existingId, createRequest.createdBy(), createRequest.data(), null);
-                log.info("Update Result: {}", updateResult);
+                log.debug("Update Result: {}", updateResult);
                 CreateResponse createResponse = new CreateResponse(
                         List.of(),
                         List.of(updateResult)
@@ -79,10 +79,10 @@ public class BiTempService {
                 // Ex: New[2022-12-26, 2022-12-31] = Existing[2022-12-25, 2022-12-31]
                 // Result: Existing[2022-12-25, 2022-12-26 - 1 second] and New[2022-12-26, 2022-12-31]
                 // Update the existing record's effectiveTo to new record's effectiveFrom - 1 second and insert new record
-                log.info("Scenario 1.2: New From is after existing From and New To is equal to existing To");
+                log.debug("Scenario 1.2: New From is after existing From and New To is equal to existing To");
                 UpdateResult updateResult = updateBiTempData(existingId, createRequest.createdBy(), null, convertEpochMilliToEffectiveMeta(existingFrom, newFrom - 1000));
 
-                log.info("Update Result: {}", updateResult);
+                log.debug("Update Result: {}", updateResult);
 
                 String insertResult = insertBiTempData(createRequest);
 
@@ -100,11 +100,11 @@ public class BiTempService {
                 // Update the existing record's effectiveFrom to new record's effectiveFrom.
                 // Update the existing record's data. No need to insert new record
 
-                log.info("Scenario 1.3: New From is before existing From and New To is equal to existing To");
+                log.debug("Scenario 1.3: New From is before existing From and New To is equal to existing To");
 
                 UpdateResult updateResult = updateBiTempData(existingId, createRequest.createdBy(), createRequest.data(), convertEpochMilliToEffectiveMeta(newFrom, existingTo));
 
-                log.info("Update Result: {}", updateResult);
+                log.debug("Update Result: {}", updateResult);
 
                 CreateResponse createResponse = new CreateResponse(
                         List.of(),
@@ -119,7 +119,7 @@ public class BiTempService {
                 // Result: Existing[2022-12-30 + 1 second, 2022-12-31] and New[2022-12-25, 2022-12-30]
                 // Update the existing record's effectiveFrom to new record's effectiveTo + 1 second and insert new record
 
-                log.info("Scenario 1.4: New From is equal to existing From and New To is before existing To");
+                log.debug("Scenario 1.4: New From is equal to existing From and New To is before existing To");
 
                 UpdateResult updateResult = updateBiTempData(
                         existingId,
@@ -128,7 +128,7 @@ public class BiTempService {
                         convertEpochMilliToEffectiveMeta(newTo + 1000, existingTo)
                 );
 
-                log.info("Update Result: {}", updateResult);
+                log.debug("Update Result: {}", updateResult);
 
                 String insertResult = insertBiTempData(createRequest);
 
@@ -145,7 +145,7 @@ public class BiTempService {
                 // Result: Existing[2022-12-25, 2022-12-31] D2 and New[2022-12-31 + 1 second, 2023-01-01] D1
                 // Update the new record's effectiveFrom to existing record's effectiveTo + 1 second and insert new record
 
-                log.info("Scenario 1.5: New From is equal to existing From and New To is after existing To");
+                log.debug("Scenario 1.5: New From is equal to existing From and New To is after existing To");
                 CreateRequest newCreateRequest = new CreateRequest(
                         createRequest.key(),
                         createRequest.data(),
@@ -170,7 +170,7 @@ public class BiTempService {
                 // Update the existing record's effectiveTo to new record's effectiveFrom - 1 second and insert new record
                 // Insert new record with effectiveFrom = new record's effectiveTo + 1 second and effectiveTo = existing record's effectiveTo
 
-                log.info("Scenario 1.6: New From is after existing From and New To is before existing To");
+                log.debug("Scenario 1.6: New From is after existing From and New To is before existing To");
 
                 UpdateResult updateResultA = updateBiTempData(
                         existingId,
@@ -179,7 +179,7 @@ public class BiTempService {
                         convertEpochMilliToEffectiveMeta(existingFrom, newFrom - 1000)
                 );
 
-                log.info("Update Result A: {}", updateResultA);
+                log.debug("Update Result A: {}", updateResultA);
 
                 String insertResult = insertBiTempData(createRequest);
 
@@ -207,7 +207,7 @@ public class BiTempService {
                 // Update the new record's effectiveTo to existing record's effectiveFrom - 1 second and insert new record
                 // Insert new record with effectiveFrom = existing record's effectiveTo + 1 second and effectiveTo = new record's effectiveTo
 
-                log.info("Scenario 1.7: New From is before existing From and New To is after existing To");
+                log.debug("Scenario 1.7: New From is before existing From and New To is after existing To");
                 CreateRequest newCreateRequestA = new CreateRequest(
                         createRequest.key(),
                         createRequest.data(),
@@ -241,7 +241,7 @@ public class BiTempService {
                 // Result: Existing[2022-12-25, 2022-12-26 - 1 second], New[2022-12-26, 2023-01-01]
                 // Update the existing record's effectiveTo to new record's effectiveFrom - 1 second and insert new record
 
-                log.info("Scenario 1.8: New From is after existing From and New To is after existing To");
+                log.debug("Scenario 1.8: New From is after existing From and New To is after existing To");
 
                 UpdateResult updateResult = updateBiTempData(
                         existingId,
@@ -250,7 +250,7 @@ public class BiTempService {
                         convertEpochMilliToEffectiveMeta(existingFrom, newFrom - 1000)
                 );
 
-                log.info("Update Result: {}", updateResult);
+                log.debug("Update Result: {}", updateResult);
 
                 String insertResult = insertBiTempData(createRequest);
 
@@ -267,7 +267,7 @@ public class BiTempService {
                 // Result: New[2022-12-24, 2022-12-30], Existing[2022-12-30 + 1 second, 2022-12-31]
                 // Update the new record's effectiveTo to existing record's effectiveFrom - 1 second and insert new record
 
-                log.info("Scenario 1.9: New From is before existing From and New To is before existing To");
+                log.debug("Scenario 1.9: New From is before existing From and New To is before existing To");
 
                 String insertResult = insertBiTempData(createRequest);
 
@@ -278,7 +278,7 @@ public class BiTempService {
                         convertEpochMilliToEffectiveMeta(newTo + 1000, existingTo)
                 );
 
-                log.info("Update Result: {}", updateResult);
+                log.debug("Update Result: {}", updateResult);
 
                 CreateResponse createResponse = new CreateResponse(
                         List.of(insertResult),
@@ -295,7 +295,7 @@ public class BiTempService {
             // Update the existing record's effectiveTo to new record's effectiveFrom - 1 second and insert new record
             // Insert new record with effectiveFrom = new record's effectiveTo + 1 second and effectiveTo = existing record's effectiveTo
 
-            log.info("Scenario 2: Two Matching Records");
+            log.debug("Scenario 2: Two Matching Records");
 
             long newFrom = createRequest.effectiveFrom().atOffset(zoneOffSet).toInstant().toEpochMilli();
             long newTo = createRequest.effectiveTo().atOffset(zoneOffSet).toInstant().toEpochMilli();
@@ -343,7 +343,7 @@ public class BiTempService {
             // Result: Existing[2022-12-25, 2022-12-30], New[2022-12-26, 2023-01-01], Existing[2023-01-01 + 1 second, 2023-01-05]
             // Insert new record with effectiveFrom = new record's effectiveTo + 1 second and effectiveTo = existing record's effectiveTo
 
-            log.info("Scenario 3: No Matching Records");
+            log.debug("Scenario 3: No Matching Records");
 
             String insertResult = insertBiTempData(createRequest);
 
@@ -389,7 +389,7 @@ public class BiTempService {
     }
 
     public String copyBiTempDate(ObjectId id, String updatedBy) {
-        log.info("Create a copy of the record before update!");
+        log.debug("Create a copy of the record before update!");
         BiTempObject existingBiTempObject = getBiTempDataById(id);
         BiTempObject newBiTempObject = new BiTempObject(
                     existingBiTempObject.key(),
