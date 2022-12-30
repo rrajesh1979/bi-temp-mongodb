@@ -1,5 +1,6 @@
 package org.rrajesh1979.bitemp.service;
 
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.client.result.UpdateResult;
@@ -436,15 +437,20 @@ public class BiTempService {
         Long from = getAsOfRequest.effectiveFrom().atOffset(zoneOffSet).toInstant().toEpochMilli();
         Long to = getAsOfRequest.effectiveTo().atOffset(zoneOffSet).toInstant().toEpochMilli();
 
-        Query query = new Query();
-        query.addCriteria(Criteria.where("key").is(getAsOfRequest.key()));
-        query.addCriteria(Criteria.where("recordMeta.updatedAt.epochMilli").lte(asOf));
-        query.addCriteria(Criteria.where("effectiveMeta.effectiveFrom.epochMilli").lte(from));
-        query.addCriteria(Criteria.where("effectiveMeta.effectiveTo.epochMilli").gte(to));
+        Criteria criteria = Criteria.where("key").is(getAsOfRequest.key())
+                .and("recordMeta.updatedAt.epochMilli").lte(asOf)
+                .and("effectiveMeta.effectiveFrom.epochMilli").lte(from)
+                .and("effectiveMeta.effectiveTo.epochMilli").gte(to);
 
-        List<Document> documents = mongoCollection.find(query.getQueryObject()).into(new ArrayList<>());
+        final MatchOperation matchStage = Aggregation.match(criteria);
+        final SortOperation sortStage = Aggregation.sort(Sort.Direction.DESC, "recordMeta.updatedAt.epochMilli");
+        final LimitOperation limitStage = Aggregation.limit(1);
+        final Aggregation aggregation = Aggregation.newAggregation(matchStage, sortStage, limitStage);
 
-        return documents;
+        AggregationResults<Document> aggregationResults =
+                mongoTemplate.aggregate(aggregation, "forex", Document.class);
+
+        return new ArrayList<>(aggregationResults.getMappedResults());
     }
 
     public List<Document> getBiTempData(GetRequest getRequest) {
